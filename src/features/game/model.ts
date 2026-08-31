@@ -4,9 +4,10 @@ import { numberToken, operatorToken, parenthesisToken } from '../../entities/exp
 import type { Level } from '../../entities/level'
 import { OPERATOR_UNLOCK_RULES } from '../../entities/level'
 import { generateLevel } from '../progression/levels'
-import { evaluateExpression } from '../evaluation/engine'
+import { evaluateOne } from '../evaluation/engine'
+import { canInsertToken } from '../evaluation/syntax'
 import { serializedLog10, type SerializedBigNumber } from '../../shared/lib/formatHugeNumber'
-import { isBinaryOperator, isFactorialOperator } from '../../entities/operator'
+import { isUnaryOnlyOperator, isSignOperator } from '../../entities/operator'
 
 /**
  * Домен `game` — основная игровая логика.
@@ -19,12 +20,20 @@ export const $hand = game.createStore<{ numbers: number[]; operators: string[] }
   numbers: [],
   operators: [],
 })
+// Доступные операторы уровня: каждый символ используется ровно один раз.
+// binary — бинарные (['+','/']), unary — унарные (['√','!']).
+export const $available = game.createStore<{ binary: string[]; unary: string[] }>({
+  binary: [],
+  unary: [],
+})
 export const $expression = game.createStore<ExpressionToken[]>([])
 export const $cursorPosition = game.createStore<number>(0)
 export const $result = game.createStore<SerializedBigNumber | null>(null)
 export const $score = game.createStore<number>(0)
 export const $validationError = game.createStore<string | null>(null)
 export const $targetScore = game.createStore<number>(0)
+// Сообщение о результате вычисления (например, «Цель не достигнута»)
+export const $resultMessage = game.createStore<string | null>(null)
 export const $unlockedOperators = game.createStore<string[]>(['+', '-', '*', '/'])
 
 // --- События ---
@@ -51,11 +60,11 @@ export const evaluateExpressionFx = game.createEffect<
   string
 >({
   handler: (tokens) => {
-    const res = evaluateExpression(tokens)
-    if (!res.ok || !res.result) {
+    const res = evaluateOne(tokens)
+    if (!res.ok || !res.rounded) {
       throw new Error(res.error ?? 'Ошибка вычисления')
     }
-    return res.result
+    return res.rounded
   },
 })
 
@@ -75,103 +84,139 @@ export const $isEvaluating = evaluateExpressionFx.pending
 // --- Валидация токенов ---
 
 /**
+ * Помечает оператор как унарный или бинарный в зависимости от текущей позиции.
+ * - унарные только-операторы (√, !) — всегда унарные
+ * - знаки (+/−): унарные, если перед ними нет операнда (начало/после оп/после `(`/после `!`)
+ */
+function classifyToken(
+  token: ExpressionToken,
+  left: ExpressionToken | undefined
+): ExpressionToken {
+  if (token.type !== 'operator') return token
+  if (isUnaryOnlyOperator(token.value)) {
+    return { ...token, unary: true }
+  }
+  if (isSignOperator(token.value) && isUnarySignPosition(left)) {
+    return { ...token, unary: true }
+  }
+  // оператор в бинарной позиции (или `!`)
+  return { ...token, unary: false }
+}
+
+function isUnarySignPosition(left: ExpressionToken | undefined): boolean {
+  if (left === undefined) return true // начало выражения
+  if (left.type === 'parenthesis') return left.value === '('
+  if (left.type === 'operator') return left.value !== '√' && left.value !== '!'
+  // после числа или `)` — бинарный знак
+  return false
+}
+
+/** Сколько раз встречается каждое значение в списке чисел. */
+function countValues(arr: readonly number[]): Record<number, number> {
+  const m: Record<number, number> = {}
+  for (const n of arr) m[n] = (m[n] ?? 0) + 1
+  return m
+}
+
+/**
  * Доступен ли токен для вставки.
- * Правила:
- * - число: должно быть в наборе руки и ещё не использовано
- * - оператор: должен быть в руке или открыт, и ещё не использован
- * - скобки: не ограничиваем
+ * - число: есть в наборе руки и ещё остались неиспользованные экземпляры
+ *   (если значение повторяется — его можно использовать столько же раз)
+ * - оператор: символ есть в наборе уровня и ещё не использован (ровно 1 раз)
  */
 function isTokenAvailable(
   token: ExpressionToken,
   hand: { numbers: number[]; operators: string[] },
-  expression: ExpressionToken[],
-  unlocked: string[]
+  available: { binary: string[]; unary: string[] },
+  expression: ExpressionToken[]
 ): boolean {
   if (token.type === 'number') {
-    return (
-      hand.numbers.includes(token.value) &&
-      !expression.some((t) => t.type === 'number' && t.value === token.value)
-    )
+    const need = countValues(hand.numbers)[token.value]
+    if (!need) return false
+    let used = 0
+    for (const t of expression) {
+      if (t.type === 'number' && t.value === token.value) used++
+    }
+    return used < need
   }
   if (token.type === 'operator') {
-    const available = hand.operators.includes(token.value) || unlocked.includes(token.value)
-    return (
-      available &&
-      !expression.some((t) => t.type === 'operator' && t.value === token.value)
-    )
+    const pool = token.unary ? available.unary : available.binary
+    if (!pool.includes(token.value)) return false
+    const used = expression.filter(
+      (t) => t.type === 'operator' && t.value === token.value && !!t.unary === !!token.unary
+    ).length
+    return used < pool.filter((p) => p === token.value).length
+  }
+  if (token.type === 'parenthesis') {
+    // Скобки доступны только если в наборе уровня есть '()'
+    return hand.operators.includes('()')
   }
   return true
 }
 
 /**
- * Все ли числа из набора использованы в выражении.
+ * Все ли обязательные токены использованы:
+ * - каждый бинарный из {available.binary} использован ровно 1 раз
+ * - каждый унарный из {available.unary} использован ровно 1 раз
+ */
+function allTokensUsed(
+  expression: ExpressionToken[],
+  available: { binary: string[]; unary: string[] }
+): boolean {
+  for (const b of available.binary) {
+    const count = expression.filter(
+      (t) => t.type === 'operator' && t.value === b && !t.unary
+    ).length
+    if (count !== 1) return false
+  }
+  for (const u of available.unary) {
+    const count = expression.filter(
+      (t) => t.type === 'operator' && t.value === u && t.unary
+    ).length
+    if (count !== 1) return false
+  }
+  return true
+}
+
+/**
+ * Все ли числа из набора использованы в выражении (с учётом повторов:
+ * значение, встречающееся в наборе N раз, должно быть использовано N раз).
  */
 function allNumbersUsed(expression: ExpressionToken[], numbers: number[]): boolean {
-  const used = expression.filter((t) => t.type === 'number').map((t) => t.value)
-  return numbers.every((n) => used.includes(n))
-}
-
-/**
- * Все ли операторы руки использованы в выражении.
- * Бинарные и факториал считаются; скобки — нет.
- */
-function allOperatorsUsed(
-  expression: ExpressionToken[],
-  operators: string[]
-): boolean {
-  const used = expression.filter((t) => t.type === 'operator').map((t) => t.value)
-  return operators.every((op) => {
-    if (op === '(' || op === ')') return true // скобки не обязательны
-    return used.includes(op)
-  })
-}
-
-/**
- * Сколько бинарных операторов в выражении.
- */
-function countBinary(expression: ExpressionToken[]): number {
-  return expression.filter((t) => t.type === 'operator' && isBinaryOperator(t.value)).length
-}
-
-/**
- * Сколько факториалов в выражении.
- */
-function countFactorial(expression: ExpressionToken[]): number {
-  return expression.filter((t) => t.type === 'operator' && isFactorialOperator(t.value)).length
+  const used = countValues(
+    expression.filter((t) => t.type === 'number').map((t) => t.value)
+  )
+  for (const n of numbers) {
+    used[n] = (used[n] ?? 0) - 1
+  }
+  // Каждое требуемое число должно быть использовано ровно столько раз, сколько
+  // встречается в наборе (после вычитания все счётчики должны стать 0).
+  return Object.values(used).every((c) => c === 0)
 }
 
 // --- Логика ---
 
 // Старт игры: загружаем уровень
-sample({
-  clock: startGame,
-  fn: (level) => generateLevel(level),
-  target: setLevel,
-})
-
+sample({ clock: startGame, fn: (level) => generateLevel(level), target: setLevel })
 // При старте нового уровня сбрасываем состояние раунда
-sample({
-  clock: startGame,
-  target: resetRound,
-})
+sample({ clock: startGame, target: resetRound })
 
-sample({
-  clock: setLevel,
-  fn: (lvl) => lvl.level,
-  target: $currentLevel,
-})
-
+sample({ clock: setLevel, fn: (lvl) => lvl.level, target: $currentLevel })
 sample({
   clock: setLevel,
   fn: (lvl) => ({ numbers: lvl.numbers, operators: lvl.operators }),
   target: $hand,
 })
-
 sample({
   clock: setLevel,
-  fn: (lvl) => lvl.targetScore,
-  target: $targetScore,
+  fn: (lvl) => {
+    const binary = lvl.operators.filter((o) => o !== '√' && o !== '!' && o !== '()')
+    const unary = lvl.operators.filter((o) => o === '√' || o === '!')
+    return { binary, unary }
+  },
+  target: $available,
 })
+sample({ clock: setLevel, fn: (lvl) => lvl.targetScore, target: $targetScore })
 
 // Открытие операторов по уровню
 sample({
@@ -193,37 +238,26 @@ sample({
 })
 
 // resetRound: очищаем выражение, курсор, результат, ошибку
-sample({
-  clock: resetRound,
-  fn: () => [],
-  target: $expression,
-})
+sample({ clock: resetRound, fn: () => [], target: $expression })
+sample({ clock: resetRound, fn: () => 0, target: $cursorPosition })
+sample({ clock: resetRound, fn: () => null, target: $result })
+sample({ clock: resetRound, fn: () => null, target: $validationError })
+sample({ clock: resetRound, fn: () => null, target: $resultMessage })
 
-sample({
-  clock: resetRound,
-  fn: () => 0,
-  target: $cursorPosition,
-})
-
-sample({
-  clock: resetRound,
-  fn: () => null,
-  target: $result,
-})
-
-sample({
-  clock: resetRound,
-  fn: () => null,
-  target: $validationError,
-})
-
-// Вставка токена: только если он доступен (не использован, есть в наборе)
+// Вставка токена: классифицируем (унарный/бинарный) → проверяем доступность и синтаксис
 sample({
   clock: insertToken,
-  source: { hand: $hand, expression: $expression, unlocked: $unlockedOperators },
-  filter: ({ hand, expression, unlocked }, token) =>
-    isTokenAvailable(token, hand, expression, unlocked),
-  fn: (_src, token) => token,
+  source: {
+    hand: $hand,
+    available: $available,
+    expression: $expression,
+    cursor: $cursorPosition,
+  },
+  filter: ({ hand, available, expression, cursor }, token) => {
+    const c = classifyToken(token, expression[cursor - 1])
+    return isTokenAvailable(c, hand, available, expression) && canInsertToken(expression, cursor, c)
+  },
+  fn: ({ expression, cursor }, token) => classifyToken(token, expression[cursor - 1]),
   target: tokenInserted,
 })
 
@@ -275,7 +309,6 @@ sample({
   fn: (cursor) => Math.max(0, cursor - 1),
   target: $cursorPosition,
 })
-
 sample({
   clock: moveCursorRight,
   source: { cursor: $cursorPosition, expression: $expression },
@@ -292,74 +325,75 @@ sample({
 })
 
 // Очистка выражения
-sample({
-  clock: clearExpression,
-  fn: () => [],
-  target: $expression,
-})
+sample({ clock: clearExpression, fn: () => [], target: $expression })
+sample({ clock: clearExpression, fn: () => 0, target: $cursorPosition })
 
-sample({
-  clock: clearExpression,
-  fn: () => 0,
-  target: $cursorPosition,
-})
-
-// Вычисление: только если все числа и все операторы использованы
+// Вычисление: только если все обязательные токены использованы
 sample({
   clock: evaluateExpressionEvent,
-  source: { expression: $expression, hand: $hand },
-  filter: ({ expression, hand }) =>
-    allNumbersUsed(expression, hand.numbers) &&
-    allOperatorsUsed(expression, hand.operators),
+  source: { expression: $expression, available: $available, hand: $hand },
+  filter: ({ expression, available, hand }) =>
+    allTokensUsed(expression, available) && allNumbersUsed(expression, hand.numbers),
   fn: ({ expression }) => expression,
   target: evaluateExpressionFx,
 })
 
-// Если не все числа/операторы использованы — показываем ошибку
+// Если не все токены использованы — показываем ошибку
 sample({
   clock: evaluateExpressionEvent,
-  source: { expression: $expression, hand: $hand },
-  filter: ({ expression, hand }) =>
-    !allNumbersUsed(expression, hand.numbers) ||
-    !allOperatorsUsed(expression, hand.operators),
-  fn: ({ expression, hand }) => {
-    const missingNumbers = hand.numbers
-      .filter((n) => !expression.some((t) => t.type === 'number' && t.value === n))
-      .join(', ')
-    const missingOps = hand.operators
-      .filter((op) => op !== '(' && op !== ')')
-      .filter((op) => !expression.some((t) => t.type === 'operator' && t.value === op))
-      .join(', ')
-    if (missingNumbers) return `Используй все числа: ${missingNumbers}`
-    return `Используй все операторы: ${missingOps}`
+  source: { expression: $expression, available: $available, hand: $hand },
+  filter: ({ expression, available, hand }) =>
+    !allTokensUsed(expression, available) || !allNumbersUsed(expression, hand.numbers),
+  fn: ({ expression, available, hand }) => {
+    const used = countValues(
+      expression.filter((t) => t.type === 'number').map((t) => t.value)
+    )
+    const missingNumbers: number[] = []
+    for (const n of hand.numbers) {
+      if ((used[n] ?? 0) > 0) {
+        used[n] = (used[n] ?? 0) - 1
+      } else {
+        missingNumbers.push(n)
+      }
+    }
+    if (missingNumbers.length > 0) {
+      return `Используй все числа: ${missingNumbers.join(', ')}`
+    }
+    const usedTokens = countUsedTokens(expression)
+    const missingBinary = available.binary.filter((b) => usedTokens[b] < 1)
+    const missingUnary = available.unary.filter((u) => usedTokens[u] < 1)
+    const parts: string[] = []
+    for (const b of missingBinary) parts.push(`«${b}»`)
+    for (const u of missingUnary) parts.push(`унарный «${u}»`)
+    if (parts.length === 0) return 'Используй все операторы из набора'
+    return `Используй все операторы: ${parts.join(', ')}`
   },
   target: $validationError,
 })
 
-// Успех: сохраняем результат, начисляем очки
-sample({
-  clock: evaluateExpressionFx.doneData,
-  target: $result,
-})
-
+// Успех: сохраняем результат, начисляем очки (от округлённого значения)
+sample({ clock: evaluateExpressionFx.doneData, target: $result })
 sample({
   clock: evaluateExpressionFx.doneData,
   fn: (result) => serializedLog10(result),
   target: $score,
 })
+sample({ clock: evaluateExpressionFx.doneData, fn: () => null, target: $validationError })
 
+// Сообщение о результате: если цель не достигнута — показываем подсказку
 sample({
   clock: evaluateExpressionFx.doneData,
-  fn: () => null,
-  target: $validationError,
+  source: $targetScore,
+  fn: (target, result) => {
+    const score = serializedLog10(result)
+    if (score >= target) return null
+    return `Цель не достигнута: нужно ${target.toFixed(2)}, у тебя ${score.toFixed(2)} (log10)`
+  },
+  target: $resultMessage,
 })
 
 // Ошибка: показываем сообщение
-sample({
-  clock: evaluateExpressionFx.failData,
-  fn: (error) => error,
-  target: $validationError,
-})
+sample({ clock: evaluateExpressionFx.failData, fn: (error) => error, target: $validationError })
 
 // Следующий уровень
 sample({
@@ -377,6 +411,15 @@ sample({
   target: saveProgressFx,
 })
 
+// --- Вспомогательные функции для сообщений об ошибках ---
+function countUsedTokens(expression: ExpressionToken[]): Record<string, number> {
+  const map: Record<string, number> = {}
+  for (const t of expression) {
+    if (t.type === 'operator') map[t.value] = (map[t.value] ?? 0) + 1
+  }
+  return map
+}
+
 // --- Типы для UI ---
 export type GameStore = {
   currentLevel: Store<number>
@@ -386,6 +429,7 @@ export type GameStore = {
   result: Store<SerializedBigNumber | null>
   score: Store<number>
   validationError: Store<string | null>
+  resultMessage: Store<string | null>
   targetScore: Store<number>
   isEvaluating: Store<boolean>
 }
@@ -398,6 +442,7 @@ export const gameStores: GameStore = {
   result: $result,
   score: $score,
   validationError: $validationError,
+  resultMessage: $resultMessage,
   targetScore: $targetScore,
   isEvaluating: $isEvaluating,
 }

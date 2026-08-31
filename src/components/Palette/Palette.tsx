@@ -3,68 +3,112 @@ import styles from './Palette.module.css'
 
 interface PaletteProps {
   numbers: number[]
-  operators: string[]
+  /** Список бинарных операторов (например ['+','*']) — без '√' и '!' */
+  binaryOperators: string[]
+  /** Список унарных операторов (['√'], ['!'], ['√','!']) */
+  unaryOperators: string[]
   expression: ExpressionToken[]
   onNumber: (n: number) => void
-  onOperator: (op: string) => void
+  onOperator: (op: string, unary?: boolean) => void
 }
 
 /**
- * Палитра кнопок: числа из `$hand` + операторы (из руки + открытых).
- * Клик по кнопке добавляет токен в позицию курсора.
- * Уже использованные токены затемняются и блокируются.
+ * Палитра кнопок: числа + бинарные операторы + унарные (√, !).
+ * Клик добавляет токен в позицию курсора.
+ * Использованные числа и использованные операторы блокируются (каждый символ — 1 раз).
+ * Унарные операторы не блокируются повторно (их применение зависит от позиции).
  */
 export function Palette({
   numbers,
-  operators,
+  binaryOperators,
+  unaryOperators,
   expression,
   onNumber,
   onOperator,
 }: PaletteProps) {
   const uniqueNumbers = [...new Set(numbers)]
 
-  const isNumberUsed = (n: number) =>
-    expression.some((t) => t.type === 'number' && t.value === n)
-  // Скобки не блокируются (их можно использовать несколько раз)
-  const isOperatorUsed = (op: string) =>
-    op !== '(' &&
-    op !== ')' &&
-    expression.some((t) => t.type === 'operator' && t.value === op)
+  /** Сколько экземпляров каждого числа осталось неиспользованными. */
+  const numberRemaining = new Map<number, number>()
+  for (const n of numbers) numberRemaining.set(n, (numberRemaining.get(n) ?? 0) + 1)
+  for (const t of expression) {
+    if (t.type === 'number') {
+      numberRemaining.set(t.value, (numberRemaining.get(t.value) ?? 0) - 1)
+    }
+  }
+
+  const isBinaryUsed = (op: string) =>
+    expression.some((t) => t.type === 'operator' && t.value === op && !t.unary)
+
+  /** Сколько применений каждого унарного оператора осталось (обычно 1). */
+  const unaryRemaining = new Map<string, number>()
+  for (const op of unaryOperators) unaryRemaining.set(op, (unaryRemaining.get(op) ?? 0) + 1)
+  for (const t of expression) {
+    if (t.type === 'operator' && t.unary) {
+      unaryRemaining.set(t.value, (unaryRemaining.get(t.value) ?? 0) - 1)
+    }
+  }
 
   return (
     <div className={styles.palette}>
       <div className={styles.group}>
         {uniqueNumbers.map((n) => {
-          const used = isNumberUsed(n)
+          const remaining = numberRemaining.get(n) ?? 0
+          const usedUp = remaining <= 0
           return (
             <button
               key={n}
               type="button"
-              className={`${styles.number} ${used ? styles.used : ''}`}
-              disabled={used}
+              className={`${styles.number} ${usedUp ? styles.used : ''}`}
+              disabled={usedUp}
               onClick={() => onNumber(n)}
             >
               {n}
+              {remaining > 1 && <span className={styles.count}>×{remaining}</span>}
             </button>
           )
         })}
       </div>
-      <div className={styles.group}>
-        {operators.map((op) => {
-          const used = isOperatorUsed(op)
-          return (
-            <button
-              key={op}
-              type="button"
-              className={`${styles.operator} ${used ? styles.used : ''}`}
-              disabled={used}
-              onClick={() => onOperator(op)}
-            >
-              {op}
-            </button>
-          )
-        })}
-      </div>
+
+      {binaryOperators.length > 0 && (
+        <div className={styles.group}>
+          {binaryOperators.map((op) => {
+            const used = isBinaryUsed(op)
+            return (
+              <button
+                key={op}
+                type="button"
+                className={`${styles.operator} ${used ? styles.used : ''}`}
+                disabled={used}
+                onClick={() => onOperator(op)}
+              >
+                {op}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {unaryOperators.length > 0 && (
+        <div className={styles.group}>
+          {unaryOperators.map((op) => {
+            const remaining = unaryRemaining.get(op) ?? 0
+            const usedUp = remaining <= 0
+            return (
+              <button
+                key={op}
+                type="button"
+                className={`${styles.operator} ${usedUp ? styles.used : ''}`}
+                disabled={usedUp}
+                onClick={() => onOperator(op, true)}
+              >
+                {op}
+                {remaining > 1 && <span className={styles.count}>×{remaining}</span>}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

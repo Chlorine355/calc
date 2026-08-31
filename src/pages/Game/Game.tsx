@@ -1,8 +1,8 @@
+import { useEffect } from 'react'
 import { useUnit } from 'effector-react'
 import { Button } from '../../shared/ui/Button/Button'
 import { ExpressionField } from '../../components/ExpressionField/ExpressionField'
 import { Palette } from '../../components/Palette/Palette'
-import { ResultOverlay } from '../../components/ResultOverlay/ResultOverlay'
 import { useKeyboardInput } from '../../features/input/useKeyboardInput'
 import {
   $currentLevel,
@@ -12,6 +12,7 @@ import {
   $result,
   $score,
   $validationError,
+  $resultMessage,
   $targetScore,
   $isEvaluating,
   insertToken,
@@ -22,17 +23,7 @@ import {
   operatorToken,
   parenthesisToken,
 } from '../../features/game/model'
-import { $unlockedOperators } from '../../features/progression/model'
-import {
-  $showResultAnimation,
-  $lastResultString,
-  hideResultAnimation,
-} from '../../features/ui/model'
-import { formatHugeNumber } from '../../shared/lib/formatHugeNumber'
-import { create, all } from 'mathjs'
 import styles from './Game.module.css'
-
-const math = create(all, { number: 'BigNumber', precision: 64 })
 
 interface GameProps {
   onExit: () => void
@@ -50,49 +41,41 @@ export function Game({ onExit, onLevelComplete }: GameProps) {
   const result = useUnit($result)
   const score = useUnit($score)
   const validationError = useUnit($validationError)
+  const resultMessage = useUnit($resultMessage)
   const targetScore = useUnit($targetScore)
   const isEvaluating = useUnit($isEvaluating)
-  const unlockedOperators = useUnit($unlockedOperators)
-  const showResultAnimation = useUnit($showResultAnimation)
-  const lastResultString = useUnit($lastResultString)
 
   useKeyboardInput(true)
 
-  // Операторы палитры: из руки + открытые. Разворачиваем '()' в '(' и ')'.
-  const paletteOperators = [
-    ...new Set(
-      [...hand.operators, ...unlockedOperators].flatMap((op) =>
-        op === '()' ? ['(', ')'] : [op]
-      )
-    ),
-  ]
+  // Операторы палитры: ТОЛЬКО из руки уровня.
+  // Бинарные (+ - * / ^) — ровно числа−1 (счётчик), унарные (√, !) — отдельно.
+  const binaryOperators = hand.operators.filter(
+    (op) => op !== '√' && op !== '!' && op !== '()',
+  )
+  const unaryOperators = hand.operators.filter((op) => op === '√' || op === '!')
 
   const handleNumber = (n: number) => insertToken(numberToken(n))
-  const handleOperator = (op: string) => {
+  const handleOperator = (op: string, unary = false) => {
     if (op === '(' || op === ')') {
       insertToken(parenthesisToken(op as '(' | ')'))
     } else {
-      insertToken(operatorToken(op))
+      insertToken(operatorToken(op, unary))
     }
   }
 
   const handleEvaluate = () => evaluateExpressionEvent()
 
-  const handleNextLevel = () => {
-    hideResultAnimation()
-    onLevelComplete()
-  }
-
   const handleReset = () => {
-    hideResultAnimation()
     resetRound()
   }
 
-  // Форматируем результат для отображения
-  const resultDisplay = result ? formatHugeNumber(math.bignumber(result.value + 'e' + result.exponent)) : null
-
   // Достигнута ли цель
   const targetReached = result !== null && score >= targetScore
+
+  // При достижении цели сразу переходим на экран результата (без лишнего клика)
+  useEffect(() => {
+    if (targetReached) onLevelComplete()
+  }, [targetReached, onLevelComplete])
 
   return (
     <div className={styles.game}>
@@ -127,19 +110,14 @@ export function Game({ onExit, onLevelComplete }: GameProps) {
         <div className={styles.error}>{validationError}</div>
       )}
 
-      {/* Результат */}
-      {result && (
-        <div className={styles.resultBar}>
-          <span className={styles.resultLabel}>Результат:</span>
-          <span className={styles.resultValue}>{resultDisplay}</span>
-          {targetReached && <span className={styles.success}>✓ Цель достигнута!</span>}
-        </div>
-      )}
+      {/* Сообщение о результате (цель не достигнута) */}
+      {resultMessage && <div className={styles.resultMessage}>{resultMessage}</div>}
 
       {/* Палитра */}
       <Palette
         numbers={hand.numbers}
-        operators={paletteOperators}
+        binaryOperators={binaryOperators}
+        unaryOperators={unaryOperators}
         expression={expression}
         onNumber={handleNumber}
         onOperator={handleOperator}
@@ -150,19 +128,7 @@ export function Game({ onExit, onLevelComplete }: GameProps) {
         <Button size="lg" onClick={handleEvaluate} disabled={isEvaluating}>
           {isEvaluating ? 'Считаем…' : 'Вычислить'}
         </Button>
-        {targetReached && (
-          <Button size="lg" variant="secondary" onClick={handleNextLevel}>
-            Следующий уровень →
-          </Button>
-        )}
       </div>
-
-      {/* Оверлей результата */}
-      <ResultOverlay
-        show={showResultAnimation}
-        resultString={lastResultString}
-        onClose={handleNextLevel}
-      />
     </div>
   )
 }

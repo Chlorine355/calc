@@ -1,6 +1,10 @@
 import { create, all, type BigNumber } from 'mathjs'
 import type { ExpressionToken } from '../../entities/expression'
-import { serializeBigNumber, type SerializedBigNumber } from '../../shared/lib/formatHugeNumber'
+import {
+  serializeBigNumber,
+  roundBigNumber,
+  type SerializedBigNumber,
+} from '../../shared/lib/formatHugeNumber'
 import { validateSyntax, SYNTAX_MESSAGES } from './syntax'
 
 /**
@@ -14,10 +18,15 @@ const math = create(all, {
 
 /**
  * Результат вычисления выражения.
+ *
+ * - `result` — «сырое» значение (для внутренних нужд).
+ * - `rounded` — значение, округлённое до 4 знаков после запятой.
+ *   Именно его показываем игроку и от него считаем очки/цель.
  */
 export interface EvaluationResult {
   ok: boolean
   result?: SerializedBigNumber
+  rounded?: SerializedBigNumber
   error?: string
 }
 
@@ -29,66 +38,127 @@ export function tokensToString(tokens: ExpressionToken[]): string {
 }
 
 /**
- * Вычисляет строку выражения.
- *
- * Валидация происходит ТОЛЬКО здесь (при нажатии "Вычислить"),
- * никогда на лету при вводе.
+ * Вычисляет строку выражения через mathjs (для генератора целей и тестов).
+ * Функция НИКОГДА не бросает исключений.
  */
 export function evaluateString(expr: string): EvaluationResult {
-  if (expr.trim() === '') {
-    return { ok: false, error: 'Пустое выражение' }
-  }
-
-  let node
   try {
-    node = math.parse(expr)
+    if (expr.trim() === '') {
+      return { ok: false, error: 'Пустое выражение' }
+    }
+
+    let node
+    try {
+      node = math.parse(expr)
+    } catch {
+      return { ok: false, error: 'Неполное или некорректное выражение' }
+    }
+
+    let value: unknown
+    try {
+      value = node.evaluate()
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      if (/divide by zero|division by zero/i.test(msg)) {
+        return { ok: false, error: 'Деление на ноль!' }
+      }
+      if (/negative|logarithm|sqrt|root/i.test(msg)) {
+        return { ok: false, error: 'Некорректный аргумент' }
+      }
+      return { ok: false, error: 'Неполное или некорректное выражение' }
+    }
+
+    if (!math.isBigNumber(value)) {
+      return { ok: false, error: 'Некорректный аргумент' }
+    }
+
+    const bigValue = value as BigNumber
+
+    if (bigValue.isNaN()) {
+      return { ok: false, error: 'Некорректный аргумент' }
+    }
+
+    if (!bigValue.isFinite()) {
+      return { ok: false, error: 'Деление на ноль!' }
+    }
+
+    const result = serializeBigNumber(bigValue)
+    return { ok: true, result, rounded: roundBigNumber(bigValue) }
   } catch {
     return { ok: false, error: 'Неполное или некорректное выражение' }
   }
+}
 
-  let value: unknown
-  try {
-    value = node.evaluate()
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e)
-    if (/divide by zero|division by zero/i.test(msg)) {
-      return { ok: false, error: 'Деление на ноль!' }
+/**
+ * Преобразует токены в строку для mathjs, заменяя унарный `√` на `sqrt(...)`.
+ * `√` применяется к следующему первичному операнду: числу или скобочной группе.
+ */
+function tokensToMathString(tokens: ExpressionToken[]): string {
+  let out = ''
+  let i = 0
+  while (i < tokens.length) {
+    const t = tokens[i]
+    if (t.type === 'operator' && t.value === '√') {
+      // следующий токен — число или `(`
+      const next = tokens[i + 1]
+      if (next && next.type === 'number') {
+        out += `sqrt(${next.raw !== undefined ? next.raw : next.value})`
+        i += 2
+        continue
+      }
+      if (next && next.type === 'parenthesis' && next.value === '(') {
+        // найти парную закрывающую скобку
+        let depth = 0
+        let j = i + 1
+        for (; j < tokens.length; j++) {
+          const tj = tokens[j]
+          if (tj.type === 'parenthesis') {
+            if (tj.value === '(') depth++
+            else {
+              depth--
+              if (depth === 0) break
+            }
+          }
+        }
+        const inner = tokensToMathString(tokens.slice(i + 1, j + 1))
+        out += `sqrt(${inner})`
+        i = j + 1
+        continue
+      }
+      // неожиданный случай — просто пропускаем
+      out += 'sqrt('
+      i++
+      continue
     }
-    if (/negative|logarithm|sqrt|root/i.test(msg)) {
-      return { ok: false, error: 'Некорректный аргумент' }
-    }
-    return { ok: false, error: 'Неполное или некорректное выражение' }
+    out += t.value
+    i++
   }
-
-  // mathjs может вернуть Complex (например, sqrt(-1), (-1)^0.5), строку
-  // или другой тип. Для игры нужен ТОЛЬКО вещественный BigNumber.
-  if (!math.isBigNumber(value)) {
-    return { ok: false, error: 'Некорректный аргумент' }
-  }
-
-  const bigValue = value as BigNumber
-
-  if (bigValue.isNaN()) {
-    return { ok: false, error: 'Некорректный аргумент' }
-  }
-
-  // mathjs BigNumber возвращает Infinity при делении на ноль, не бросая исключение
-  if (!bigValue.isFinite()) {
-    return { ok: false, error: 'Деление на ноль!' }
-  }
-
-  return { ok: true, result: serializeBigNumber(bigValue) }
+  return out
 }
 
 /**
  * Вычисляет выражение из токенов.
- * Сначала — строгая синтаксическая валидация на уровне токенов,
- * затем — вычисление через mathjs.
+ * Сначала — строгая синтаксическая валидация, затем — вычисление через mathjs
+ * (с преобразованием `√` → `sqrt(...)`).
+ *
+ * Функция НИКОГДА не бросает исключений.
+ */
+export function evaluateOne(tokens: ExpressionToken[]): EvaluationResult {
+  try {
+    const syntaxError = validateSyntax(tokens)
+    if (syntaxError) {
+      return { ok: false, error: SYNTAX_MESSAGES[syntaxError] }
+    }
+    return evaluateString(tokensToMathString(tokens))
+  } catch {
+    return { ok: false, error: 'Неполное или некорректное выражение' }
+  }
+}
+
+/**
+ * Вычисляет выражение из токенов (алиас для обратной совместимости).
+ * Функция НИКОГДА не бросает исключений.
  */
 export function evaluateExpression(tokens: ExpressionToken[]): EvaluationResult {
-  const syntaxError = validateSyntax(tokens)
-  if (syntaxError) {
-    return { ok: false, error: SYNTAX_MESSAGES[syntaxError] }
-  }
-  return evaluateString(tokensToString(tokens))
+  return evaluateOne(tokens)
 }

@@ -49,6 +49,9 @@ export function useKeyboardInput(enabled: boolean) {
           } else if (['+', '-', '*', '/', '^', '!'].includes(e.key)) {
             e.preventDefault()
             insertToken(operatorToken(e.key))
+          } else if (e.key === '√' || e.key === 'r' || e.key === 'R') {
+            e.preventDefault()
+            insertToken(operatorToken('√', true))
           } else if (e.key === '(' || e.key === ')') {
             e.preventDefault()
             insertToken(parenthesisToken(e.key as '(' | ')'))

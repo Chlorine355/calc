@@ -3,9 +3,11 @@ import { evaluateExpression, tokensToString } from './engine'
 import { numberToken, operatorToken, parenthesisToken } from '../../entities/expression'
 
 function tokens(...vals: Array<number | string>): ReturnType<typeof numberToken>[] {
-  return vals.map((v) =>
-    typeof v === 'number' ? numberToken(v) : operatorToken(v)
-  ) as ReturnType<typeof numberToken>[]
+  return vals.map((v) => {
+    if (typeof v === 'number') return numberToken(v)
+    if (v === '(' || v === ')') return parenthesisToken(v)
+    return operatorToken(v)
+  }) as ReturnType<typeof numberToken>[]
 }
 
 describe('evaluateExpression', () => {
