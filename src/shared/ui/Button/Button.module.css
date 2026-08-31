@@ -74,6 +74,15 @@
   background: #ff6b6b;
 }
 
+.button--warning {
+  background: var(--warning);
+  color: #20201a;
+}
+
+.button--warning:hover {
+  background: #ffcc7a;
+}
+
 .button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
