@@ -30,11 +30,12 @@ describe('evaluateExpression', () => {
     expect(res.result?.exponent).toBe(157)
   })
 
-  it('вычисляет степень степени 9^(9^9)', () => {
+  it('степень степени 9^(9^9) — астрономически огромна, коротко замыкается', () => {
     const res = evaluateExpression(tokens(9, '^', '(', 9, '^', 9, ')'))
+    // 9^9 = 387420489, 9^387420489 — гигантское число, которое mathjs не может
+    // материализовать без падения воркера. Оцениваем порядок и помечаем huge.
     expect(res.ok).toBe(true)
-    // 9^9 = 387420489, 9^387420489 — гигантское число
-    expect(res.result?.exponent).toBeGreaterThan(1e8)
+    expect(res.huge).toBe(true)
   })
 
   it('степень правоассоциативна: 2^3^4 = 2^(3^4) = 2^81', () => {

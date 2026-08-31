@@ -6,6 +6,7 @@ import {
   type SerializedBigNumber,
 } from '../../shared/lib/formatHugeNumber'
 import { validateSyntax, SYNTAX_MESSAGES } from './syntax'
+import { isAstronomicallyHuge } from './magnitude'
 
 /**
  * Экземпляр mathjs с включённым BigNumber.
@@ -28,6 +29,8 @@ export interface EvaluationResult {
   result?: SerializedBigNumber
   rounded?: SerializedBigNumber
   error?: string
+  /** true, если результат астрономически огромен (ОЧЕНЬ БОЛЬШОЕ ЧИСЛО). */
+  huge?: boolean
 }
 
 /**
@@ -52,6 +55,13 @@ export function evaluateString(expr: string): EvaluationResult {
       node = math.parse(expr)
     } catch {
       return { ok: false, error: 'Неполное или некорректное выражение' }
+    }
+
+    // Астрономически огромный результат (например, 9^(9^9)): mathjs материализует
+    // целое с миллионами разрядов и роняет воркер ДО того, как сработает try/catch.
+    // Оцениваем порядок по дереву и коротко замыкаем, не вызывая evaluate().
+    if (isAstronomicallyHuge(node)) {
+      return { ok: true, huge: true }
     }
 
     let value: unknown

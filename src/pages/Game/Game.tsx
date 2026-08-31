@@ -13,6 +13,7 @@ import {
   $score,
   $validationError,
   $resultMessage,
+  $hugeAchievement,
   $targetScore,
   $isEvaluating,
   insertToken,
@@ -42,6 +43,7 @@ export function Game({ onExit, onLevelComplete }: GameProps) {
   const score = useUnit($score)
   const validationError = useUnit($validationError)
   const resultMessage = useUnit($resultMessage)
+  const hugeAchievement = useUnit($hugeAchievement)
   const targetScore = useUnit($targetScore)
   const isEvaluating = useUnit($isEvaluating)
 
@@ -69,8 +71,8 @@ export function Game({ onExit, onLevelComplete }: GameProps) {
     resetRound()
   }
 
-  // Достигнута ли цель
-  const targetReached = result !== null && score >= targetScore
+  // Достигнута ли цель: обычный результат или достижение «ОЧЕНЬ БОЛЬШОЕ ЧИСЛО»
+  const targetReached = (result !== null && score >= targetScore) || hugeAchievement
 
   // При достижении цели сразу переходим на экран результата (без лишнего клика)
   useEffect(() => {
@@ -118,6 +120,7 @@ export function Game({ onExit, onLevelComplete }: GameProps) {
         numbers={hand.numbers}
         binaryOperators={binaryOperators}
         unaryOperators={unaryOperators}
+        parenPairs={hand.operators.includes('()') ? 2 : 0}
         expression={expression}
         onNumber={handleNumber}
         onOperator={handleOperator}

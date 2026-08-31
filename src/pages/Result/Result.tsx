@@ -6,6 +6,7 @@ import {
   $expression,
   $result,
   $score,
+  $hugeAchievement,
   nextLevel,
 } from '../../features/game/model'
 import { $lastResultString } from '../../features/ui/model'
@@ -27,6 +28,7 @@ export function Result({ onContinue }: ResultProps) {
   const result = useUnit($result)
   const score = useUnit($score)
   const lastResultString = useUnit($lastResultString)
+  const hugeAchievement = useUnit($hugeAchievement)
   const [copied, setCopied] = useState(false)
 
   const exprString = tokensToString(expression)
@@ -55,7 +57,21 @@ export function Result({ onContinue }: ResultProps) {
         <p className={styles.subtitle}>Твоё выражение</p>
         <div className={styles.expr}>{exprString || '—'}</div>
         <div className={styles.bigNumber}>{lastResultString}</div>
-        <p className={styles.scoreText}>Очки: {Math.round(score)} (10^{logScore})</p>
+        <p className={styles.scoreText}>
+          Очки: {hugeAchievement ? '—' : Math.round(score)}
+          {hugeAchievement ? '' : ` (10^${logScore})`}
+        </p>
+
+        {hugeAchievement && (
+          <div className={styles.achievement}>
+            🏆 Достижение: <b>ОЧЕНЬ БОЛЬШОЕ ЧИСЛО</b>
+            <br />
+            <span>
+              Число вышло за пределы расчёта — ты сильно победил! Оно не засчитано в{' '}
+              <i>рекорд числа</i>.
+            </span>
+          </div>
+        )}
 
         <div className={styles.actions}>
           <Button size="lg" onClick={handleContinue}>

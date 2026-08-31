@@ -30,9 +30,15 @@ export const $hand = game.createStore<{ numbers: number[]; operators: string[] }
 })
 // Доступные операторы уровня: каждый символ используется ровно один раз.
 // binary — бинарные (['+','/']), unary — унарные (['√','!']).
-export const $available = game.createStore<{ binary: string[]; unary: string[] }>({
+// parenPairs — сколько пар скобок доступно (0, если скобки не открыты).
+export const $available = game.createStore<{
+  binary: string[]
+  unary: string[]
+  parenPairs: number
+}>({
   binary: [],
   unary: [],
+  parenPairs: 0,
 })
 export const $expression = game.createStore<ExpressionToken[]>([])
 export const $cursorPosition = game.createStore<number>(0)
@@ -44,6 +50,9 @@ export const $validationError = game.createStore<string | null>(null)
 export const $targetScore = game.createStore<number>(0)
 // Сообщение о результате вычисления (например, «Цель не достигнута»)
 export const $resultMessage = game.createStore<string | null>(null)
+// Достижение «ОЧЕНЬ БОЛЬШОЕ ЧИСЛО»: true, когда игрок собрал астрономически
+// огромное выражение и «победил» им (сильно, но не засчитывается в рекорд числа).
+export const $hugeAchievement = game.createStore<boolean>(false)
 export const $unlockedOperators = game.createStore<string[]>(['+', '-', '*', '/'])
 
 // --- События ---
@@ -63,18 +72,26 @@ const setLevel = game.createEvent<Level>()
 // Срабатывает только когда токен реально вставлен (прошёл валидацию)
 const tokenInserted = game.createEvent<ExpressionToken>()
 
+/** Исход вычисления: обычное число или «ОЧЕНЬ БОЛЬШОЕ ЧИСЛО». */
+export type EvaluationOutcome =
+  | { kind: 'ok'; rounded: SerializedBigNumber }
+  | { kind: 'huge' }
+
 // --- Эффекты ---
 export const evaluateExpressionFx = game.createEffect<
   ExpressionToken[],
-  SerializedBigNumber,
-  string
+  EvaluationOutcome,
+  Error
 >({
   handler: (tokens) => {
     const res = evaluateOne(tokens)
+    if (res.huge) {
+      return { kind: 'huge' }
+    }
     if (!res.ok || !res.rounded) {
       throw new Error(res.error ?? 'Ошибка вычисления')
     }
-    return res.rounded
+    return { kind: 'ok', rounded: res.rounded }
   },
 })
 
@@ -128,10 +145,16 @@ function countValues(arr: readonly number[]): Record<number, number> {
  *   (если значение повторяется — его можно использовать столько же раз)
  * - оператор: символ есть в наборе уровня и ещё не использован (ровно 1 раз)
  */
+export interface AvailableOps {
+  binary: string[]
+  unary: string[]
+  parenPairs: number
+}
+
 function isTokenAvailable(
   token: ExpressionToken,
   hand: { numbers: number[]; operators: string[] },
-  available: { binary: string[]; unary: string[] },
+  available: AvailableOps,
   expression: ExpressionToken[]
 ): boolean {
   if (token.type === 'number') {
@@ -152,8 +175,12 @@ function isTokenAvailable(
     return used < pool.filter((p) => p === token.value).length
   }
   if (token.type === 'parenthesis') {
-    // Скобки доступны только если в наборе уровня есть '()'
-    return hand.operators.includes('()')
+    // Скобки есть, только если уровень открыл '()'.
+    // Открывающих и закрывающих даётся поровну (parenPairs каждая).
+    if (available.parenPairs <= 0) return false
+    const usedOfKind = expression.filter((t) => t.type === 'parenthesis' && t.value === token.value)
+      .length
+    return usedOfKind < available.parenPairs
   }
   return true
 }
@@ -165,7 +192,7 @@ function isTokenAvailable(
  */
 function allTokensUsed(
   expression: ExpressionToken[],
-  available: { binary: string[]; unary: string[] }
+  available: AvailableOps
 ): boolean {
   for (const b of available.binary) {
     const count = expression.filter(
@@ -216,7 +243,10 @@ sample({
   fn: (lvl) => {
     const binary = lvl.operators.filter((o) => o !== '√' && o !== '!' && o !== '()')
     const unary = lvl.operators.filter((o) => o === '√' || o === '!')
-    return { binary, unary }
+    // Скобки: 2 пары, если уровень открыл '()'. Ровно столько использует
+    // генератор целей — иначе уровень непроходим.
+    const parenPairs = lvl.operators.includes('()') ? 2 : 0
+    return { binary, unary, parenPairs }
   },
   target: $available,
 })
@@ -247,6 +277,7 @@ sample({ clock: resetRound, fn: () => 0, target: $cursorPosition })
 sample({ clock: resetRound, fn: () => null, target: $result })
 sample({ clock: resetRound, fn: () => null, target: $validationError })
 sample({ clock: resetRound, fn: () => null, target: $resultMessage })
+sample({ clock: resetRound, fn: () => false, target: $hugeAchievement })
 
 // Вставка токена: классифицируем (унарный/бинарный) → проверяем доступность и синтаксис
 sample({
@@ -375,35 +406,70 @@ sample({
   target: $validationError,
 })
 
-// Успех: сохраняем результат, начисляем очки (от округлённого значения)
-sample({ clock: evaluateExpressionFx.doneData, target: $result })
+// Успех: сохраняем результат, начисляем очки (от округлённого значения).
+// «ОЧЕНЬ БОЛЬШОЕ ЧИСЛО» не идёт в рекорд числа и не начисляет очки.
 sample({
   clock: evaluateExpressionFx.doneData,
-  fn: (result) => serializedLog10(result),
+  filter: (outcome) => outcome.kind === 'ok',
+  fn: (outcome) => (outcome as { kind: 'ok'; rounded: SerializedBigNumber }).rounded,
+  target: $result,
+})
+sample({
+  clock: evaluateExpressionFx.doneData,
+  filter: (outcome) => outcome.kind === 'ok',
+  fn: (outcome) =>
+    serializedLog10((outcome as { kind: 'ok'; rounded: SerializedBigNumber }).rounded),
   target: $score,
 })
-// Рекорд: обновляем максимальные очки и сохраняем в localStorage
+// Рекорд: обновляем максимальные очки и сохраняем в localStorage.
+// «ОЧЕНЬ БОЛЬШОЕ ЧИСЛО» НЕ засчитывается в рекорд числа (score). Поэтому
+// сбрасываем score и result (чтобы не считать достижением «заменённую цель»).
 sample({
   clock: evaluateExpressionFx.doneData,
-  fn: (result) => recordHighScore(serializedLog10(result)),
+  filter: (outcome) => outcome.kind === 'huge',
+  fn: () => 0,
+  target: $score,
+})
+sample({
+  clock: evaluateExpressionFx.doneData,
+  filter: (outcome) => outcome.kind === 'huge',
+  fn: () => null,
+  target: $result,
+})
+sample({
+  clock: evaluateExpressionFx.doneData,
+  filter: (outcome) => outcome.kind === 'ok',
+  fn: (outcome) => recordHighScore(serializedLog10((outcome as { kind: 'ok'; rounded: SerializedBigNumber }).rounded)),
   target: $bestScore,
+})
+sample({
+  clock: evaluateExpressionFx.doneData,
+  filter: (outcome) => outcome.kind === 'huge',
+  fn: () => true,
+  target: $hugeAchievement,
 })
 sample({ clock: evaluateExpressionFx.doneData, fn: () => null, target: $validationError })
 
-// Сообщение о результате: если цель не достигнута — показываем подсказку
+// Сообщение о результате: если цель не достигнута — показываем подсказку.
+// «ОЧЕНЬ БОЛЬШОЕ ЧИСЛО» — заведомый выигрыш.
 sample({
   clock: evaluateExpressionFx.doneData,
   source: $targetScore,
-  fn: (target, result) => {
-    const score = serializedLog10(result)
+  fn: (target, outcome) => {
+    if (outcome.kind === 'huge') return null
+    const score = serializedLog10(outcome.rounded)
     if (score >= target) return null
     return `Цель не достигнута: нужно ${target.toFixed(2)}, у тебя ${score.toFixed(2)} (log10)`
   },
   target: $resultMessage,
 })
 
-// Ошибка: показываем сообщение
-sample({ clock: evaluateExpressionFx.failData, fn: (error) => error, target: $validationError })
+// Ошибка: показываем сообщение. failData несёт объект Error — извлекаем текст.
+sample({
+  clock: evaluateExpressionFx.failData,
+  fn: (error) => (error instanceof Error ? error.message : String(error)),
+  target: $validationError,
+})
 
 // Следующий уровень
 sample({
@@ -448,6 +514,7 @@ export type GameStore = {
   bestScore: Store<number>
   validationError: Store<string | null>
   resultMessage: Store<string | null>
+  hugeAchievement: Store<boolean>
   targetScore: Store<number>
   isEvaluating: Store<boolean>
 }
@@ -462,6 +529,7 @@ export const gameStores: GameStore = {
   bestScore: $bestScore,
   validationError: $validationError,
   resultMessage: $resultMessage,
+  hugeAchievement: $hugeAchievement,
   targetScore: $targetScore,
   isEvaluating: $isEvaluating,
 }

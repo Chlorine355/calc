@@ -20,8 +20,9 @@ sample({
   clock: evaluateExpressionFx.doneData,
   fn: (result) => {
     // Формируем строку результата из сериализованного числа
-    if (result.exponent === 0) return result.value
-    return `${result.value}e${result.exponent}`
+    if (result.kind === 'huge') return 'ОЧЕНЬ БОЛЬШОЕ ЧИСЛО'
+    if (result.rounded.exponent === 0) return result.rounded.value
+    return `${result.rounded.value}e${result.rounded.exponent}`
   },
   target: $lastResultString,
 })

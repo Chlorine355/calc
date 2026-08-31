@@ -7,21 +7,25 @@ interface PaletteProps {
   binaryOperators: string[]
   /** Список унарных операторов (['√'], ['!'], ['√','!']) */
   unaryOperators: string[]
+  /** Сколько пар скобок доступно на уровне (0 — скобки закрыты). */
+  parenPairs?: number
   expression: ExpressionToken[]
   onNumber: (n: number) => void
   onOperator: (op: string, unary?: boolean) => void
 }
 
 /**
- * Палитра кнопок: числа + бинарные операторы + унарные (√, !).
+ * Палитра кнопок: числа + бинарные операторы + унарные (√, !) + скобки.
  * Клик добавляет токен в позицию курсора.
  * Использованные числа и использованные операторы блокируются (каждый символ — 1 раз).
- * Унарные операторы не блокируются повторно (их применение зависит от позиции).
+ * Скобки не имеют лимита (их число не ограничено по правилам), показываются,
+ * только если уровень открыл '()'.
  */
 export function Palette({
   numbers,
   binaryOperators,
   unaryOperators,
+  parenPairs = 0,
   expression,
   onNumber,
   onOperator,
@@ -103,6 +107,31 @@ export function Palette({
                 onClick={() => onOperator(op, true)}
               >
                 {op}
+                {remaining > 1 && <span className={styles.count}>×{remaining}</span>}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {parenPairs > 0 && (
+        <div className={styles.group}>
+          {['(', ')'].map((p) => {
+            const used = expression.filter(
+              (t) => t.type === 'parenthesis' && t.value === p
+            ).length
+            const remaining = parenPairs - used
+            const usedUp = remaining <= 0
+            return (
+              <button
+                key={p}
+                type="button"
+                className={`${styles.operator} ${styles.paren} ${usedUp ? styles.used : ''}`}
+                disabled={usedUp}
+                onClick={() => onOperator(p)}
+              >
+                {p}
+                {/* Бейдж — только когда осталось больше одной пары */}
                 {remaining > 1 && <span className={styles.count}>×{remaining}</span>}
               </button>
             )

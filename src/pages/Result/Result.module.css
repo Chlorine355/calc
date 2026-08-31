@@ -53,6 +53,22 @@
   margin-bottom: 24px;
 }
 
+.achievement {
+  background: linear-gradient(135deg, #2a1a05, #3d2608);
+  border: 1px solid var(--warning, #ffb84d);
+  border-radius: var(--radius-md, 16px);
+  padding: 14px 16px;
+  margin-bottom: 24px;
+  color: var(--warning, #ffb84d);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.achievement span {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
 .actions {
   display: flex;
   flex-direction: column;
