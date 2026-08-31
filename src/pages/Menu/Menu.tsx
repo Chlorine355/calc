@@ -7,12 +7,13 @@ import styles from './Menu.module.css'
 
 interface MenuProps {
   onPlay: () => void
+  onAchievements: () => void
 }
 
 /**
  * Экран 1: Главное меню.
  */
-export function Menu({ onPlay }: MenuProps) {
+export function Menu({ onPlay, onAchievements }: MenuProps) {
   const currentLevel = useUnit($currentLevel)
   const bestScore = useUnit($bestScore)
   const [showHelp, setShowHelp] = useState(false)
@@ -29,7 +30,6 @@ export function Menu({ onPlay }: MenuProps) {
         <span className={styles.logoIcon}>🧮</span>
         <h1 className={styles.title}>Calc</h1>
         <p className={styles.subtitle}>short for calculator</p>
-        <p className={styles.subtitle}>Собери максимальное выражение</p>
       </div>
 
       <div className={styles.actions}>
@@ -41,6 +41,9 @@ export function Menu({ onPlay }: MenuProps) {
         </Button>
         <Button size="lg" variant="warning" onClick={handlePlay}>
           Ежедневное испытание
+        </Button>
+        <Button variant="secondary" onClick={onAchievements}>
+          Достижения 🏆
         </Button>
         <Button variant="secondary" onClick={() => setShowHelp(true)}>
           Как играть

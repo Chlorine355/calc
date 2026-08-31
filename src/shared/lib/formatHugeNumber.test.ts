@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { create, all } from 'mathjs'
-import { formatHugeNumber, log10, serializeBigNumber } from './formatHugeNumber'
+import { formatHugeNumber, log10, serializeBigNumber, formatLog10Target } from './formatHugeNumber'
 
 const math = create(all, { number: 'BigNumber', precision: 64 })
 
@@ -57,5 +57,18 @@ describe('serializeBigNumber', () => {
     const s = serializeBigNumber(bn('2.4e543'))
     expect(s.exponent).toBe(543)
     expect(parseFloat(s.value)).toBeCloseTo(2.4, 1)
+  })
+})
+
+describe('formatLog10Target', () => {
+  it('малые числа — обычная запись', () => {
+    expect(formatLog10Target(0)).toBe('1') // 10^0 = 1
+    expect(formatLog10Target(3)).toBe('1000')
+    expect(formatLog10Target(3.5)).toBe('3162.28')
+  })
+
+  it('большие числа — научная нотация', () => {
+    expect(formatLog10Target(14.15)).toBe('1.41e14')
+    expect(formatLog10Target(6)).toBe('1.00e6')
   })
 })

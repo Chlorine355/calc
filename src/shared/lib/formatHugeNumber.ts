@@ -73,6 +73,28 @@ export function serializedLog10(s: SerializedBigNumber): number {
 }
 
 /**
+ * Форматирует целевое число из его log10 в человекочитаемый вид.
+ *
+ * - log10 < 6 (число < 1e6) → обычная запись (например, «1234»).
+ * - иначе → научная нотация (например, «1.4e14»).
+ */
+export function formatLog10Target(log10: number): string {
+  if (!Number.isFinite(log10) || log10 < 0) return '0'
+  if (log10 < 6) {
+    const v = Math.pow(10, log10)
+    // Округляем до целого, если близко к целому, иначе до 2 знаков.
+    const rounded = Math.round(v)
+    if (Math.abs(v - rounded) < 0.01) return String(rounded)
+    return v.toFixed(2)
+  }
+  // Научная нотация: 10^log10 = 10^(int + frac) = mantissa * 10^int
+  const int = Math.floor(log10)
+  const frac = log10 - int
+  const mantissa = Math.pow(10, frac)
+  return `${mantissa.toFixed(2)}e${int}`
+}
+
+/**
  * Преобразует BigNumber в сериализуемое представление.
  */
 export function serializeBigNumber(bn: BigNumber): SerializedBigNumber {

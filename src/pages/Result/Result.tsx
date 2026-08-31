@@ -12,6 +12,9 @@ import {
 import { $lastResultString } from '../../features/ui/model'
 import { tokensToString } from '../../features/evaluation/engine'
 import { serializedLog10 } from '../../shared/lib/formatHugeNumber'
+// Импорт регистрирует сэмплы домена достижений (присвоение по условиям).
+import { $roundAchievements } from '../../features/achievements/model'
+import { ACHIEVEMENT_BY_ID } from '../../features/achievements/definitions'
 import { useState } from 'react'
 import styles from './Result.module.css'
 
@@ -29,6 +32,7 @@ export function Result({ onContinue }: ResultProps) {
   const score = useUnit($score)
   const lastResultString = useUnit($lastResultString)
   const hugeAchievement = useUnit($hugeAchievement)
+  const roundAchievements = useUnit($roundAchievements)
   const [copied, setCopied] = useState(false)
 
   const exprString = tokensToString(expression)
@@ -62,14 +66,22 @@ export function Result({ onContinue }: ResultProps) {
           {hugeAchievement ? '' : ` (10^${logScore})`}
         </p>
 
-        {hugeAchievement && (
-          <div className={styles.achievement}>
-            🏆 Достижение: <b>ОЧЕНЬ БОЛЬШОЕ ЧИСЛО</b>
-            <br />
-            <span>
-              Число вышло за пределы расчёта — ты сильно победил! Оно не засчитано в{' '}
-              <i>рекорд числа</i>.
-            </span>
+        {roundAchievements.length > 0 && (
+          <div className={styles.achievements}>
+            {roundAchievements.map((id) => {
+              const def = ACHIEVEMENT_BY_ID[id]
+              return (
+                <div key={id} className={styles.achievement}>
+                  <span className={styles.achievementIcon}>{def.icon}</span>
+                  <div className={styles.achievementBody}>
+                    <div className={styles.achievementTitle}>
+                      🏆 Достижение: <b>{def.title}</b>
+                    </div>
+                    <div className={styles.achievementDesc}>{def.description}</div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
 

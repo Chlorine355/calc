@@ -16,7 +16,7 @@ export function ExpressionField({ tokens, cursor, onSelectSlot }: ExpressionFiel
   if (tokens.length === 0) {
     return (
       <div className={styles.field + ' ' + styles['field--empty']}>
-        <span className={styles.placeholder}>Собери выражение…</span>
+        <span className={styles.placeholder}>Собери наибольшее выражение…</span>
       </div>
     )
   }

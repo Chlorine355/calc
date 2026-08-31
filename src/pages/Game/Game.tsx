@@ -24,6 +24,7 @@ import {
   operatorToken,
   parenthesisToken,
 } from '../../features/game/model'
+import { formatLog10Target } from '../../shared/lib/formatHugeNumber'
 import styles from './Game.module.css'
 
 interface GameProps {
@@ -97,7 +98,7 @@ export function Game({ onExit, onLevelComplete }: GameProps) {
 
       {/* Цель */}
       <div className={styles.target}>
-        Цель: превзойти <b>{targetScore.toFixed(1)}</b> (log10)
+        Цель: превзойти <b>{formatLog10Target(targetScore)}</b>
       </div>
 
       {/* Поле выражения */}
