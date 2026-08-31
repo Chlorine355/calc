@@ -1,0 +1,55 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 15, 26, 0.85);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+}
+
+.result {
+  text-align: center;
+  padding: 40px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--token-number-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-glow);
+  max-width: 90vw;
+}
+
+.label {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.value {
+  font-family: var(--font-mono);
+  font-size: clamp(28px, 8vw, 64px);
+  font-weight: 800;
+  color: var(--accent-hover);
+  text-shadow: 0 0 30px var(--accent-glow);
+  word-break: break-all;
+  line-height: 1.1;
+}
+
+.hint {
+  margin-top: 20px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+  pointer-events: none;
+}

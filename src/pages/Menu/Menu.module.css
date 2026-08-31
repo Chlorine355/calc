@@ -1,0 +1,122 @@
+.menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.logo {
+  text-align: center;
+}
+
+.logoIcon {
+  font-size: 72px;
+  display: block;
+  filter: drop-shadow(0 0 20px var(--accent-glow));
+}
+
+.title {
+  font-size: 64px;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--accent-hover), #e0b4ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 2px;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 18px;
+  margin-top: 4px;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.stats {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.stat {
+  flex: 1;
+  text-align: center;
+}
+
+.statValue {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--accent-hover);
+}
+
+.statLabel {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+
+.statDivider {
+  width: 1px;
+  height: 40px;
+  background: var(--token-number-border);
+}
+
+/* Модалка */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 15, 26, 0.8);
+  padding: 24px;
+}
+
+.modalCard {
+  max-width: 480px;
+  width: 100%;
+}
+
+.modalTitle {
+  margin-bottom: 16px;
+  color: var(--accent-hover);
+}
+
+.rules {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+  color: var(--text-secondary);
+}
+
+.rules b {
+  color: var(--text-primary);
+}
+
+@media (max-width: 600px) {
+  .title {
+    font-size: 48px;
+  }
+
+  .logoIcon {
+    font-size: 56px;
+  }
+}

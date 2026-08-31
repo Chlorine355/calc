@@ -1,0 +1,81 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  font-weight: 600;
+  border-radius: var(--radius);
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.button:active {
+  transform: scale(0.96);
+}
+
+/* Размеры */
+.button--sm {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.button--md {
+  padding: 12px 24px;
+  font-size: 16px;
+}
+
+.button--lg {
+  padding: 16px 32px;
+  font-size: 18px;
+}
+
+/* Варианты */
+.button--primary {
+  background: linear-gradient(135deg, var(--accent), #5b3df0);
+  color: #fff;
+  box-shadow: var(--shadow-card);
+}
+
+.button--primary:hover {
+  background: linear-gradient(135deg, var(--accent-hover), var(--accent));
+  box-shadow: var(--shadow-glow);
+}
+
+.button--secondary {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--token-number-border);
+}
+
+.button--secondary:hover {
+  background: var(--bg-hover);
+}
+
+.button--ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.button--ghost:hover {
+  background: var(--bg-card);
+}
+
+.button--danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.button--danger:hover {
+  background: #ff6b6b;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}

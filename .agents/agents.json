@@ -1,0 +1,15 @@
+{
+  "instructions": {
+    "path": "AGENTS.md"
+  },
+  "integrations": {
+    "enabled": [
+      "codex",
+      "opencode",
+      "claude",
+      "antigravity"
+    ]
+  },
+  "schemaVersion": 6,
+  "syncMode": "source-only"
+}

@@ -1,0 +1,75 @@
+{
+  "services": {
+    "active-directory": {
+      "base_dn": "",
+      "bind_dn": "",
+      "bind_password": "",
+      "domain": "",
+      "server": "",
+      "use_ssl": true,
+      "users_ou": ""
+    },
+    "argocd": {
+      "token": ""
+    },
+    "confluence": {
+      "token": ""
+    },
+    "gitlab": {
+      "token": "",
+      "url": "https://gitlab.abgroup.tech"
+    },
+    "harbor": {
+      "password": "",
+      "url": "",
+      "username": ""
+    },
+    "jira": {
+      "token": ""
+    },
+    "keycloak": {
+      "admin_password": "",
+      "admin_user": "",
+      "url": ""
+    },
+    "litellm": {
+      "base_url": "",
+      "master_key": ""
+    },
+    "mikrotik": {
+      "base_url": "http://192.168.31.1",
+      "password": "",
+      "username": "admin",
+      "verify_tls": true
+    },
+    "proxmox": {
+      "endpoint": "",
+      "password": "",
+      "username": ""
+    },
+    "s3": {
+      "access_key": "",
+      "secret_key": ""
+    },
+    "vault": {
+      "addr": "",
+      "skip_verify": "false",
+      "token": ""
+    },
+    "vaultwarden": {
+      "client_id": "",
+      "client_secret": "",
+      "grant_type": "client_credentials",
+      "master_password": "",
+      "scope": "api",
+      "url": ""
+    }
+  },
+  "terraform": {
+    "vm": {
+      "password": "",
+      "public_key_path": "",
+      "user": ""
+    }
+  }
+}

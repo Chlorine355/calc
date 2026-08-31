@@ -1,0 +1,7 @@
+.card {
+  background: var(--bg-elevated);
+  border-radius: var(--radius);
+  border: 1px solid var(--token-number-border);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+}

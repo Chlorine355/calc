@@ -1,0 +1,142 @@
+.field {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 90px;
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--token-number-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  user-select: none;
+}
+
+.field--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder {
+  color: var(--text-muted);
+  font-size: 18px;
+}
+
+.slot {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+}
+
+/* Невидимый кликабельный зазор между токенами */
+.slotGap {
+  width: 14px;
+  height: 60px;
+  background: transparent;
+  border: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.slotGap:hover {
+  background: rgba(124, 92, 255, 0.12);
+  border-radius: 4px;
+}
+
+/* Мигающий курсор */
+.cursor {
+  width: 3px;
+  height: 46px;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+  animation: blink 1s steps(2, start) infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Токены */
+.token--number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 60px;
+  padding: 0 10px;
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var(--token-number);
+  border: 2px solid var(--token-number-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
+}
+
+.token--operator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 60px;
+  padding: 0 10px;
+  font-family: var(--font-mono);
+  font-size: 30px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--token-operator), #5b3df0);
+  border: 2px solid var(--token-operator-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
+}
+
+.token--parenthesis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 60px;
+  padding: 0 8px;
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--token-paren);
+  border-radius: var(--radius-sm);
+}
+
+/* Адаптив */
+@media (max-width: 600px) {
+  .field {
+    min-height: 74px;
+    padding: 14px 10px;
+  }
+
+  .slotGap {
+    width: 10px;
+    height: 48px;
+  }
+
+  .token--number,
+  .token--operator,
+  .token--parenthesis {
+    height: 48px;
+    font-size: 24px;
+  }
+
+  .cursor {
+    height: 38px;
+  }
+}
