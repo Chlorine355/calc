@@ -8,6 +8,12 @@ import { evaluateOne } from '../evaluation/engine'
 import { canInsertToken } from '../evaluation/syntax'
 import { serializedLog10, type SerializedBigNumber } from '../../shared/lib/formatHugeNumber'
 import { isUnaryOnlyOperator, isSignOperator } from '../../entities/operator'
+import {
+  loadProgress,
+  saveProgress,
+  recordHighScore,
+  type ProgressData,
+} from '../../shared/lib/progress'
 
 /**
  * Домен `game` — основная игровая логика.
@@ -15,7 +21,9 @@ import { isUnaryOnlyOperator, isSignOperator } from '../../entities/operator'
 const game = createDomain('game')
 
 // --- Сторы ---
-export const $currentLevel = game.createStore<number>(1)
+// Уровень, на котором продолжится игра — читаем из localStorage при старте
+const initialProgress = loadProgress()
+export const $currentLevel = game.createStore<number>(initialProgress.currentLevel)
 export const $hand = game.createStore<{ numbers: number[]; operators: string[] }>({
   numbers: [],
   operators: [],
@@ -30,6 +38,8 @@ export const $expression = game.createStore<ExpressionToken[]>([])
 export const $cursorPosition = game.createStore<number>(0)
 export const $result = game.createStore<SerializedBigNumber | null>(null)
 export const $score = game.createStore<number>(0)
+// Рекорд: максимальные очки, начисленные за выражение (log10)
+export const $bestScore = game.createStore<number>(loadProgress().highestScore)
 export const $validationError = game.createStore<string | null>(null)
 export const $targetScore = game.createStore<number>(0)
 // Сообщение о результате вычисления (например, «Цель не достигнута»)
@@ -68,14 +78,8 @@ export const evaluateExpressionFx = game.createEffect<
   },
 })
 
-export const saveProgressFx = game.createEffect<{ level: number; score: number }, void>({
-  handler: ({ level, score }) => {
-    try {
-      localStorage.setItem('calc-progress', JSON.stringify({ level, score }))
-    } catch {
-      // localStorage может быть недоступен (приватный режим) — игнорируем
-    }
-  },
+export const saveProgressFx = game.createEffect<ProgressData, void>({
+  handler: saveProgress,
 })
 
 // Флаг "вычисляется" — из pending эффекта
@@ -378,6 +382,12 @@ sample({
   fn: (result) => serializedLog10(result),
   target: $score,
 })
+// Рекорд: обновляем максимальные очки и сохраняем в localStorage
+sample({
+  clock: evaluateExpressionFx.doneData,
+  fn: (result) => recordHighScore(serializedLog10(result)),
+  target: $bestScore,
+})
 sample({ clock: evaluateExpressionFx.doneData, fn: () => null, target: $validationError })
 
 // Сообщение о результате: если цель не достигнута — показываем подсказку
@@ -403,11 +413,18 @@ sample({
   target: startGame,
 })
 
-// Сохранение прогресса при смене уровня
+// Сохранение прогресса при старте уровня.
+// currentLevel — уровень, на котором игрок сейчас (точка продолжения).
+// highestLevel — рекорд: максимум из прежнего и текущего.
+// Уровень берём из payload события startGame (а не из $currentLevel, который
+// ещё не обновился к моменту срабатывания sample).
 sample({
   clock: startGame,
-  source: { level: $currentLevel, score: $score },
-  fn: ({ level, score }) => ({ level, score }),
+  fn: (level) => {
+    const prev = loadProgress()
+    const highest = Math.max(prev.highestLevel, level)
+    return { currentLevel: level, highestLevel: highest, highestScore: prev.highestScore }
+  },
   target: saveProgressFx,
 })
 
@@ -428,6 +445,7 @@ export type GameStore = {
   cursorPosition: Store<number>
   result: Store<SerializedBigNumber | null>
   score: Store<number>
+  bestScore: Store<number>
   validationError: Store<string | null>
   resultMessage: Store<string | null>
   targetScore: Store<number>
@@ -441,6 +459,7 @@ export const gameStores: GameStore = {
   cursorPosition: $cursorPosition,
   result: $result,
   score: $score,
+  bestScore: $bestScore,
   validationError: $validationError,
   resultMessage: $resultMessage,
   targetScore: $targetScore,

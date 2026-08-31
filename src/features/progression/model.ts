@@ -1,5 +1,6 @@
 import { createDomain, sample } from 'effector'
 import { $currentLevel, $unlockedOperators } from '../game/model'
+import { loadProgress } from '../../shared/lib/progress'
 
 /**
  * Домен `progression` — прогрессия и открытия.
@@ -7,7 +8,8 @@ import { $currentLevel, $unlockedOperators } from '../game/model'
 const progression = createDomain('progression')
 
 // --- Сторы ---
-export const $highestLevel = progression.createStore<number>(1)
+// Рекорд (максимальный достигнутый уровень) — читаем из localStorage при старте
+export const $highestLevel = progression.createStore<number>(loadProgress().highestLevel)
 
 // Реэкспортируем открытые операторы из game-домена (единый источник истины)
 export { $unlockedOperators }

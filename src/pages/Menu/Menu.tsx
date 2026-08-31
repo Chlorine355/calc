@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { useUnit } from 'effector-react'
 import { Button } from '../../shared/ui/Button/Button'
 import { Card } from '../../shared/ui/Card/Card'
-import { $highestLevel } from '../../features/progression/model'
-import { startGame } from '../../features/game/model'
+import { $currentLevel, $bestScore, startGame } from '../../features/game/model'
 import styles from './Menu.module.css'
 
 interface MenuProps {
@@ -14,11 +13,13 @@ interface MenuProps {
  * Экран 1: Главное меню.
  */
 export function Menu({ onPlay }: MenuProps) {
-  const highestLevel = useUnit($highestLevel)
+  const currentLevel = useUnit($currentLevel)
+  const bestScore = useUnit($bestScore)
   const [showHelp, setShowHelp] = useState(false)
 
   const handlePlay = () => {
-    startGame(highestLevel)
+    // Продолжаем с уровня, на котором остановился игрок
+    startGame(currentLevel)
     onPlay()
   }
 
@@ -41,12 +42,12 @@ export function Menu({ onPlay }: MenuProps) {
 
       <Card className={styles.stats}>
         <div className={styles.stat}>
-          <span className={styles.statValue}>{highestLevel}</span>
+          <span className={styles.statValue}>{currentLevel}</span>
           <span className={styles.statLabel}>Уровень</span>
         </div>
         <div className={styles.statDivider} />
         <div className={styles.stat}>
-          <span className={styles.statValue}>{highestLevel}</span>
+          <span className={styles.statValue}>{Math.round(bestScore)}</span>
           <span className={styles.statLabel}>Рекорд</span>
         </div>
       </Card>
