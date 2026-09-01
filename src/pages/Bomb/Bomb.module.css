@@ -110,8 +110,17 @@
 }
 
 @media (max-width: 600px) {
+  .header {
+    flex-wrap: wrap;
+  }
+
+  /* Статистика (таймер, решено, рекорд) — в столбик, чтобы не переносилась */
   .stats {
-    gap: 10px;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    order: 3;
+    width: 100%;
   }
 
   .time {
