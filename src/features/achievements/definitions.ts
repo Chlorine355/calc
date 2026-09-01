@@ -82,7 +82,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   {
     id: AchievementId.Pi,
     icon: '🥧',
-    title: 'Пирога?',
+    title: 'Кусочек пирога?',
     description: 'Получил число, начинающееся с 3.14.',
   },
   {
