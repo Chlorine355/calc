@@ -42,6 +42,10 @@ const allFalse: AchievementsState = {
   [AchievementId.Fahrenheit451]: false,
   [AchievementId.ScyllaCharybdis]: false,
   [AchievementId.AbsoluteZero]: false,
+  [AchievementId.Pi]: false,
+  [AchievementId.GoldenRatio]: false,
+  [AchievementId.Palindrome]: false,
+  [AchievementId.JustOne]: false,
 }
 
 /** Строит полное состояние из частичных правок поверх allFalse. */

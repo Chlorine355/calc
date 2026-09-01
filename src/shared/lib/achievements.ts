@@ -19,6 +19,10 @@ export const AchievementId = {
   Fahrenheit451: 'fahrenheit-451',
   ScyllaCharybdis: 'scylla-charybdis',
   AbsoluteZero: 'absolute-zero',
+  Pi: 'pi',
+  GoldenRatio: 'golden-ratio',
+  Palindrome: 'palindrome',
+  JustOne: 'just-one',
 } as const
 
 export type AchievementId = (typeof AchievementId)[keyof typeof AchievementId]
@@ -38,6 +42,10 @@ const DEFAULT_ACHIEVEMENTS: AchievementsState = {
   [AchievementId.Fahrenheit451]: false,
   [AchievementId.ScyllaCharybdis]: false,
   [AchievementId.AbsoluteZero]: false,
+  [AchievementId.Pi]: false,
+  [AchievementId.GoldenRatio]: false,
+  [AchievementId.Palindrome]: false,
+  [AchievementId.JustOne]: false,
 }
 
 /**

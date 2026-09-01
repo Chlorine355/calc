@@ -79,6 +79,30 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     title: 'Абсолютный ноль',
     description: 'Получил отрицательное очень большое число.',
   },
+  {
+    id: AchievementId.Pi,
+    icon: '🥧',
+    title: 'Пирога?',
+    description: 'Получил число, начинающееся с 3.14.',
+  },
+  {
+    id: AchievementId.GoldenRatio,
+    icon: '✨',
+    title: 'Золотое сечение',
+    description: 'Получил число, начинающееся с 1.618.',
+  },
+  {
+    id: AchievementId.Palindrome,
+    icon: '🔁',
+    title: 'Аргентина манит',
+    description: 'Получил число-палиндром (например, 121, 1331, кроме однозначных).',
+  },
+  {
+    id: AchievementId.JustOne,
+    icon: '🥇',
+    title: 'А большего мне и не надо',
+    description: 'Получил ровно 1.',
+  },
 ]
 
 /** Словарь определений по id для быстрого доступа. */

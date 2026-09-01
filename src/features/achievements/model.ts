@@ -30,6 +30,14 @@ const achievementNewlyEarned = achievements.createEvent<AchievementId[]>()
 const MILLION_LOG10 = Math.log10(1_000_000)
 const TRILLION_LOG10 = Math.log10(1_000_000_000_000)
 
+/** Палиндром ли строка (без учёта знака). */
+function isPalindrome(s: string): boolean {
+  for (let i = 0, j = s.length - 1; i < j; i++, j--) {
+    if (s[i] !== s[j]) return false
+  }
+  return true
+}
+
 /**
  * Определяет, какие достижения получены ВПЕРВЫЕ этим вычислением.
  * Сравнивает с ещё не обновлённым состоянием ($achievements читается до начисления).
@@ -108,6 +116,33 @@ function earnedIds(state: AchievementsState, outcome: EvaluationOutcome): Achiev
       parseFloat(value) === 68
     ) {
       ids.push(AchievementId.ScyllaCharybdis)
+    }
+
+    // Пирога?: число начинается с 3.14 (мантисса без знака).
+    const unsigned = value.replace(/^-/, '')
+    if (!state[AchievementId.Pi] && unsigned.startsWith('3.14')) {
+      ids.push(AchievementId.Pi)
+    }
+
+    // Золотое сечение: число начинается с 1.618.
+    if (!state[AchievementId.GoldenRatio] && unsigned.startsWith('1.618')) {
+      ids.push(AchievementId.GoldenRatio)
+    }
+
+    // Аргентина манит: число-палиндром (целое, минимум 2 цифры).
+    if (
+      !state[AchievementId.Palindrome] &&
+      exponent === 0 &&
+      !unsigned.includes('.') &&
+      unsigned.length >= 2 &&
+      isPalindrome(unsigned)
+    ) {
+      ids.push(AchievementId.Palindrome)
+    }
+
+    // А большего мне и не надо: ровно 1.
+    if (!state[AchievementId.JustOne] && exponent === 0 && parseFloat(value) === 1) {
+      ids.push(AchievementId.JustOne)
     }
   }
 
