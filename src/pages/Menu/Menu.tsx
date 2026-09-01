@@ -31,6 +31,11 @@ export function Menu({ onPlay, onBomb, onAchievements }: MenuProps) {
     onBomb()
   }
 
+  // «Часовая бомба» открывается после 20-го уровня — сначала нужно пройти обучение.
+  const bombLocked = currentLevel < 20
+  // «Ежедневное испытание» открывается после 30-го уровня.
+  const dailyLocked = currentLevel < 30
+
   return (
     <div className={styles.menu}>
       <div className={styles.logo}>
@@ -42,12 +47,34 @@ export function Menu({ onPlay, onBomb, onAchievements }: MenuProps) {
         <Button size="lg" onClick={handlePlay}>
           Играть
         </Button>
-        <Button size="lg" variant="danger" onClick={handleBomb}>
-          Часовая бомба
+        <Button
+          size="lg"
+          variant="danger"
+          onClick={handleBomb}
+          disabled={bombLocked}
+          title={bombLocked ? 'Открывается на 20-м уровне' : undefined}
+        >
+          {bombLocked ? '🔒 ' : ''}Часовая бомба
         </Button>
-        <Button size="lg" variant="warning" onClick={handlePlay} disabled>
-          Ежедневное испытание
+        {bombLocked && (
+          <p className={styles.lockHint}>
+            🔒 Откроется на 20-м уровне!
+          </p>
+        )}
+        <Button
+          size="lg"
+          variant="warning"
+          onClick={handlePlay}
+          disabled={dailyLocked}
+          title={dailyLocked ? 'Открывается на 30-м уровне' : undefined}
+        >
+          {dailyLocked ? '🔒 ' : ''}Ежедневное испытание
         </Button>
+        {dailyLocked && (
+          <p className={styles.lockHint}>
+            🔒 Откроется на 30-м уровне!
+          </p>
+        )}
         <Button variant="secondary" onClick={onAchievements}>
           Достижения 🏆
         </Button>

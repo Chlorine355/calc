@@ -42,6 +42,13 @@
   max-width: 280px;
 }
 
+.lockHint {
+  margin: -8px 0 0;
+  font-size: 12px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
 .stats {
   display: flex;
   align-items: center;
