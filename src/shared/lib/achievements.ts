@@ -10,6 +10,10 @@ export const ACHIEVEMENTS_KEY = 'calc-achievements'
 export const AchievementId = {
   FirstExponential: 'first-exponential',
   VeryBigNumber: 'very-big-number',
+  SixtySeven: 'sixty-seven',
+  Millionaire: 'millionaire',
+  Devil: 'devil',
+  ElonMusk: 'elon-musk',
 } as const
 
 export type AchievementId = (typeof AchievementId)[keyof typeof AchievementId]
@@ -20,20 +24,26 @@ export type AchievementsState = Record<AchievementId, boolean>
 const DEFAULT_ACHIEVEMENTS: AchievementsState = {
   [AchievementId.FirstExponential]: false,
   [AchievementId.VeryBigNumber]: false,
+  [AchievementId.SixtySeven]: false,
+  [AchievementId.Millionaire]: false,
+  [AchievementId.Devil]: false,
+  [AchievementId.ElonMusk]: false,
 }
 
 /**
  * Читает достижения из localStorage. При отсутствии/повреждении — все неполучены.
+ * Отсутствующие в хранилище ключи (например, добавленные в новой версии) — false.
  */
 export function loadAchievements(): AchievementsState {
   try {
     const raw = localStorage.getItem(ACHIEVEMENTS_KEY)
     if (!raw) return { ...DEFAULT_ACHIEVEMENTS }
     const data = JSON.parse(raw) as Partial<AchievementsState>
-    return {
-      [AchievementId.FirstExponential]: data[AchievementId.FirstExponential] === true,
-      [AchievementId.VeryBigNumber]: data[AchievementId.VeryBigNumber] === true,
+    const result = { ...DEFAULT_ACHIEVEMENTS }
+    for (const id of Object.keys(DEFAULT_ACHIEVEMENTS) as AchievementId[]) {
+      if (data[id] === true) result[id] = true
     }
+    return result
   } catch {
     return { ...DEFAULT_ACHIEVEMENTS }
   }
@@ -51,13 +61,19 @@ export function saveAchievements(state: AchievementsState): void {
 }
 
 /**
- * Отмечает достижение как полученное (идемпотентно) и сохраняет.
+ * Отмечает несколько достижений как полученные (идемпотентно) и сохраняет.
  * Возвращает актуальное состояние.
  */
-export function awardAchievement(id: AchievementId): AchievementsState {
+export function awardAchievements(ids: readonly AchievementId[]): AchievementsState {
+  if (ids.length === 0) return loadAchievements()
   const prev = loadAchievements()
-  if (prev[id]) return prev
-  const next = { ...prev, [id]: true }
+  const next = { ...prev }
+  for (const id of ids) next[id] = true
   saveAchievements(next)
   return next
+}
+
+/** @deprecated Используй awardAchievements с одним элементом. */
+export function awardAchievement(id: AchievementId): AchievementsState {
+  return awardAchievements([id])
 }
