@@ -77,10 +77,11 @@ export const $resultMessage = game.createStore<string | null>(null)
 // огромное выражение и «победил» им (сильно, но не засчитывается в рекорд числа).
 export const $hugeAchievement = game.createStore<boolean>(false)
 export const $unlockedOperators = game.createStore<string[]>(['+', '-', '*', '/'])
-// Режим игры: обычный или «Часовая бомба». В бомбе не обновляем обычные
-// очки/рекорд (у неё свои), поэтому гейтим эти сэмплы по режиму.
-export const $mode = game.createStore<'normal' | 'bomb'>('normal')
-export const setMode = game.createEvent<'normal' | 'bomb'>()
+// Режим игры: обычный, «Часовая бомба» или «Ежедневное испытание».
+// В бомбе и ежедневном испытании не обновляем обычные очки/рекорд (у них свои),
+// поэтому гейтим эти сэмплы по режиму.
+export const $mode = game.createStore<'normal' | 'bomb' | 'daily'>('normal')
+export const setMode = game.createEvent<'normal' | 'bomb' | 'daily'>()
 sample({ clock: setMode, fn: (m) => m, target: $mode })
 
 // --- События ---
@@ -219,7 +220,9 @@ function isTokenAvailable(
 
 /**
  * Все ли обязательные токены использованы:
- * - каждый бинарный из {available.binary} использован ровно 1 раз
+ * - каждый бинарный из {available.binary} использован ровно столько раз,
+ *   сколько встречается в наборе (обычно 1; в «Ежедневном испытании» операторы
+ *   могут повторяться — тогда каждый символ нужно использовать столько же раз)
  * - каждый унарный из {available.unary} использован ровно 1 раз
  */
 function allTokensUsed(
@@ -227,10 +230,11 @@ function allTokensUsed(
   available: AvailableOps
 ): boolean {
   for (const b of available.binary) {
+    const need = available.binary.filter((x) => x === b).length
     const count = expression.filter(
       (t) => t.type === 'operator' && t.value === b && !t.unary
     ).length
-    if (count !== 1) return false
+    if (count !== need) return false
   }
   for (const u of available.unary) {
     const count = expression.filter(
@@ -456,7 +460,9 @@ sample({
       return `Используй все числа: ${missingNumbers.join(', ')}`
     }
     const usedTokens = countUsedTokens(expression)
-    const missingBinary = available.binary.filter((b) => usedTokens[b] < 1)
+    const missingBinary = available.binary.filter(
+      (b) => usedTokens[b] < available.binary.filter((x) => x === b).length
+    )
     const missingUnary = available.unary.filter((u) => usedTokens[u] < 1)
     const parts: string[] = []
     for (const b of missingBinary) parts.push(`«${b}»`)
@@ -560,6 +566,8 @@ sample({
       highestLevel: highest,
       highestScore: prev.highestScore,
       bombHighScore: prev.bombHighScore,
+      dailyLastPlayed: prev.dailyLastPlayed,
+      dailyBestScore: prev.dailyBestScore,
     }
   },
   target: saveProgressFx,

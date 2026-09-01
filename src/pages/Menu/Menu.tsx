@@ -4,21 +4,24 @@ import { Button } from '../../shared/ui/Button/Button'
 import { Card } from '../../shared/ui/Card/Card'
 import { $currentLevel, $bestScore, startGame } from '../../features/game/model'
 import { $bombHighScore } from '../../features/bomb/model'
+import { $dailyAvailable } from '../../features/daily/model'
 import styles from './Menu.module.css'
 
 interface MenuProps {
   onPlay: () => void
   onBomb: () => void
+  onDaily: () => void
   onAchievements: () => void
 }
 
 /**
  * Экран 1: Главное меню.
  */
-export function Menu({ onPlay, onBomb, onAchievements }: MenuProps) {
+export function Menu({ onPlay, onBomb, onDaily, onAchievements }: MenuProps) {
   const currentLevel = useUnit($currentLevel)
   const bestScore = useUnit($bestScore)
   const bombHighScore = useUnit($bombHighScore)
+  const dailyAvailable = useUnit($dailyAvailable)
   const [showHelp, setShowHelp] = useState(false)
 
   const handlePlay = () => {
@@ -31,10 +34,14 @@ export function Menu({ onPlay, onBomb, onAchievements }: MenuProps) {
     onBomb()
   }
 
+  const handleDaily = () => {
+    onDaily()
+  }
+
   // «Часовая бомба» открывается после 20-го уровня — сначала нужно пройти обучение.
   const bombLocked = currentLevel < 20
   // «Ежедневное испытание» открывается после 30-го уровня.
-  const dailyLocked = currentLevel < 30
+  const dailyLocked = currentLevel < 3
 
   return (
     <div className={styles.menu}>
@@ -64,16 +71,25 @@ export function Menu({ onPlay, onBomb, onAchievements }: MenuProps) {
         <Button
           size="lg"
           variant="warning"
-          onClick={handlePlay}
-          disabled={dailyLocked}
-          title={dailyLocked ? 'Открывается на 30-м уровне' : undefined}
+          onClick={handleDaily}
+          disabled={dailyLocked || !dailyAvailable}
+          title={
+            dailyLocked
+              ? 'Открывается на 30-м уровне'
+              : !dailyAvailable
+                ? 'Уже проходил сегодня'
+                : undefined
+          }
         >
-          {dailyLocked ? '🔒 ' : ''}Ежедневное испытание
+          {dailyLocked || !dailyAvailable ? '🔒 ' : ''}Ежедневное испытание
         </Button>
         {dailyLocked && (
           <p className={styles.lockHint}>
             🔒 Откроется на 30-м уровне!
           </p>
+        )}
+        {!dailyLocked && !dailyAvailable && (
+          <p className={styles.lockHint}>✅ Уже проходил сегодня — загляни завтра!</p>
         )}
         <Button variant="secondary" onClick={onAchievements}>
           Достижения 🏆

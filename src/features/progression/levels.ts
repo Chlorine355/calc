@@ -1,5 +1,7 @@
 import type { Level } from '../../entities/level'
 import { greedyTarget } from './target'
+import { evaluateString } from '../evaluation/engine'
+import { serializedLog10 } from '../../shared/lib/formatHugeNumber'
 
 /**
  * Детерминированный генератор уровней.
@@ -204,6 +206,86 @@ function generateRandomLevel(n: number, level: number, hasTarget: boolean): Leve
  */
 export function generateBombLevel(): Level {
   return generateRandomLevel(4, 1, true)
+}
+
+// --- Ежедневное испытание ---
+
+/** Детерминированный PRNG (mulberry32) — сидируется датой, чтобы уровень был
+ *  одинаковым для всех в течение дня, но менялся каждый день. */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0
+  return () => {
+    a |= 0
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+/** Хэш строки в 32-битное число (для сидирования PRNG датой). */
+function hashString(s: string): number {
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return h >>> 0
+}
+
+/** Строит плоскую цепочку n1 op1 n2 op2 n3 ... и возвращает log10 результата. */
+function flatChainLog10(nums: number[], ops: string[]): number {
+  const expr = nums.map((n, i) => (i === 0 ? String(n) : `${ops[i - 1]}${n}`)).join('')
+  const r = evaluateString(expr)
+  if (!r.ok || !r.rounded) return -Infinity
+  return serializedLog10(r.rounded)
+}
+
+/**
+ * Цель «Ежедневного испытания»: максимум log10 по нескольким стратегическим
+ * порядкам операторов (^ в начало — правоассоциативно и даёт максимум, затем
+ * * и +). Кап — чтобы цель была достижимой, но не астрономической.
+ */
+function dailyTarget(numbers: number[], operators: string[]): number {
+  const nums = [...numbers].sort((a, b) => b - a)
+  const priority: Record<string, number> = { '^': 0, '*': 1, '+': 2, '-': 3, '/': 4 }
+  const sorted = [...operators].sort((a, b) => priority[a] - priority[b])
+  const orderings = [sorted, [...sorted].reverse(), operators]
+
+  let best = -Infinity
+  for (const ops of orderings) {
+    const log = flatChainLog10(nums, ops)
+    if (log > best) best = log
+  }
+  // Кап: если вышло астрономически (или нечисловое) — ставим скромный порог,
+  // чтобы уровень был проходим (игрок может превзойти его большим выражением).
+  if (!isFinite(best) || best > 1000) return 1000
+  return best
+}
+
+/**
+ * Генерирует уровень «Ежедневного испытания»: 10 чисел, 9 бинарных операторов
+ * (без факториала), детерминированно по дате. Числа и операторы могут повторяться.
+ * Цель — достижимый, но не астрономический порог.
+ */
+export function generateDailyLevel(dateKey: string): Level {
+  const rng = mulberry32(hashString(dateKey))
+  const numbers = Array.from({ length: 10 }, () => 1 + Math.floor(rng() * 9))
+  const pool = ['+', '-', '*', '/', '^']
+  const operators = Array.from({ length: 9 }, () => pool[Math.floor(rng() * pool.length)])
+  // Гарантируем хотя бы один '^' (иначе цель слишком мала), но не слишком много,
+  // чтобы результат не взорвался в астрономию.
+  if (!operators.includes('^')) operators[0] = '^'
+
+  const targetScore = dailyTarget(numbers, operators)
+  return {
+    level: 0,
+    numbers,
+    operators,
+    hasTarget: true,
+    targetScore,
+    example: '',
+  }
 }
 
 /**

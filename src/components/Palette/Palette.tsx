@@ -41,8 +41,16 @@ export function Palette({
     }
   }
 
-  const isBinaryUsed = (op: string) =>
-    expression.some((t) => t.type === 'operator' && t.value === op && !t.unary)
+  /** Сколько применений каждого бинарного оператора осталось (обычно 1; в
+   *  «Ежедневном испытании» операторы могут повторяться — тогда каждый символ
+   *  можно использовать столько же раз, сколько он встречается в наборе). */
+  const binaryRemaining = new Map<string, number>()
+  for (const op of binaryOperators) binaryRemaining.set(op, (binaryRemaining.get(op) ?? 0) + 1)
+  for (const t of expression) {
+    if (t.type === 'operator' && !t.unary) {
+      binaryRemaining.set(t.value, (binaryRemaining.get(t.value) ?? 0) - 1)
+    }
+  }
 
   /** Сколько применений каждого унарного оператора осталось (обычно 1). */
   const unaryRemaining = new Map<string, number>()
@@ -76,17 +84,19 @@ export function Palette({
 
       {binaryOperators.length > 0 && (
         <div className={styles.group}>
-          {binaryOperators.map((op) => {
-            const used = isBinaryUsed(op)
+          {[...new Set(binaryOperators)].map((op) => {
+            const remaining = binaryRemaining.get(op) ?? 0
+            const usedUp = remaining <= 0
             return (
               <button
                 key={op}
                 type="button"
-                className={`${styles.operator} ${used ? styles.used : ''}`}
-                disabled={used}
+                className={`${styles.operator} ${usedUp ? styles.used : ''}`}
+                disabled={usedUp}
                 onClick={() => onOperator(op)}
               >
                 {op}
+                {remaining > 1 && <span className={styles.count}>×{remaining}</span>}
               </button>
             )
           })}
