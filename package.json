@@ -11,7 +11,7 @@
     "test": "vitest run",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "effector": "^23.4.4",
