@@ -86,6 +86,8 @@ sample({ clock: setMode, fn: (m) => m, target: $mode })
 // --- События ---
 export const insertToken = game.createEvent<ExpressionToken>()
 export const deleteToken = game.createEvent()
+/** Удалить токен по id (клик по токену на мобильных — аналог Backspace). */
+export const removeToken = game.createEvent<string>()
 export const moveCursorLeft = game.createEvent()
 export const moveCursorRight = game.createEvent()
 export const setCursorPosition = game.createEvent<number>()
@@ -367,6 +369,32 @@ sample({
   clock: deleteToken,
   source: $cursorPosition,
   fn: (cursor) => Math.max(0, cursor - 1),
+  target: $cursorPosition,
+})
+
+// Удаление токена по id (клик по токену). Курсор ставим на место удалённого,
+// чтобы можно было сразу вставить что-то другое.
+sample({
+  clock: removeToken,
+  source: $expression,
+  fn: (expression, id) => {
+    const idx = expression.findIndex((t) => t.id === id)
+    if (idx === -1) return expression
+    const next = [...expression]
+    next.splice(idx, 1)
+    return next
+  },
+  target: $expression,
+})
+sample({
+  clock: removeToken,
+  source: { expression: $expression, cursor: $cursorPosition },
+  fn: ({ expression, cursor }, id) => {
+    const idx = expression.findIndex((t) => t.id === id)
+    if (idx === -1) return cursor
+    // Курсор встаёт на место удалённого токена (не дальше конца).
+    return Math.min(idx, expression.length - 1)
+  },
   target: $cursorPosition,
 })
 

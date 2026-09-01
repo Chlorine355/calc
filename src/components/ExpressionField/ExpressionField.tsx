@@ -5,6 +5,8 @@ interface ExpressionFieldProps {
   tokens: ExpressionToken[]
   cursor: number
   onSelectSlot: (index: number) => void
+  /** Удалить токен по id (клик по токену — аналог Backspace на мобильных). */
+  onRemoveToken?: (id: string) => void
   /** Живой предпросмотр результата (полупрозрачный «= число» после токенов). */
   preview?: string | null
 }
@@ -12,12 +14,14 @@ interface ExpressionFieldProps {
 /**
  * Поле выражения: массив карточек-токенов + мигающий курсор.
  * Курсор рисуется в зазоре (слоте) между токенами; клик по слоту
- * перемещает курсор в эту позицию.
+ * перемещает курсор в эту позицию. Клик по самому токену удаляет его
+ * (удобно на мобильных, где нет клавиатуры).
  */
 export function ExpressionField({
   tokens,
   cursor,
   onSelectSlot,
+  onRemoveToken,
   preview,
 }: ExpressionFieldProps) {
   if (tokens.length === 0) {
@@ -40,7 +44,14 @@ export function ExpressionField({
           >
             {index === cursor ? <Cursor /> : null}
           </button>
-          <span className={styles[`token--${token.type}`]}>{token.value}</span>
+          <button
+            type="button"
+            className={styles[`token--${token.type}`]}
+            aria-label={`Удалить ${String(token.value)}`}
+            onClick={() => onRemoveToken?.(token.id)}
+          >
+            {token.value}
+          </button>
         </span>
       ))}
       {/* Курсор в конце */}

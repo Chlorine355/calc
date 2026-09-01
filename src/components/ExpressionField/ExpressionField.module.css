@@ -67,17 +67,39 @@
   }
 }
 
-/* Токены */
-.token--number {
+/* Токены — кликабельные кнопки: клик удаляет токен (аналог Backspace) */
+.token--number,
+.token--operator,
+.token--parenthesis {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.1s ease,
+    filter 0.15s ease;
+}
+
+.token--number:active,
+.token--operator:active,
+.token--parenthesis:active {
+  transform: scale(0.92);
+}
+
+.token--number:hover,
+.token--operator:hover,
+.token--parenthesis:hover {
+  filter: brightness(1.15);
+}
+
+.token--number {
   min-width: 44px;
   height: 60px;
   padding: 0 10px;
-  font-family: var(--font-mono);
   font-size: 28px;
-  font-weight: 700;
   color: var(--text-primary);
   background: var(--token-number);
   border: 2px solid var(--token-number-border);
@@ -86,15 +108,10 @@
 }
 
 .token--operator {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   min-width: 44px;
   height: 60px;
   padding: 0 10px;
-  font-family: var(--font-mono);
   font-size: 30px;
-  font-weight: 700;
   color: #fff;
   background: linear-gradient(135deg, var(--token-operator), #5b3df0);
   border: 2px solid var(--token-operator-border);
@@ -103,15 +120,10 @@
 }
 
 .token--parenthesis {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   min-width: 30px;
   height: 60px;
   padding: 0 8px;
-  font-family: var(--font-mono);
   font-size: 26px;
-  font-weight: 700;
   color: var(--text-secondary);
   background: var(--token-paren);
   border-radius: var(--radius-sm);

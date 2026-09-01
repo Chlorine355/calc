@@ -33,6 +33,20 @@
   --achievement-item-desc: clamp(13px, 2.5vw, 14px);
   --achievement-icon: clamp(30px, 6vw, 36px);
 
+  /* Типографика и отступы меню: адаптивные (clamp между мобильным и десктопом) */
+  --menu-gap: clamp(20px, 5vw, 40px);
+  --menu-padding: clamp(16px, 4vw, 24px);
+  --menu-title: clamp(40px, 9vw, 64px);
+  --menu-logo-icon: clamp(44px, 9vw, 72px);
+  --menu-subtitle: clamp(14px, 3.5vw, 18px);
+  --menu-actions-gap: clamp(12px, 3vw, 16px);
+  --menu-actions-max-width: clamp(240px, 70vw, 300px);
+  --menu-stats-gap: clamp(16px, 5vw, 24px);
+  --menu-stats-max-width: clamp(280px, 70vw, 320px);
+  --menu-stat-value: clamp(16px, 4vw, 20px);
+  --menu-stat-label: clamp(11px, 2.5vw, 13px);
+  --menu-lock-hint: clamp(11px, 2.5vw, 12px);
+
   --shadow-card: 0 6px 20px rgba(0, 0, 0, 0.35);
   --shadow-glow: 0 0 30px var(--accent-glow);
 

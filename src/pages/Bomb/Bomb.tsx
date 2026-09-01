@@ -13,6 +13,7 @@ import {
   $targetScore,
   $isEvaluating,
   insertToken,
+  removeToken,
   setCursorPosition,
   evaluateExpressionEvent,
   resetRound,
@@ -154,6 +155,7 @@ export function Bomb({ onExit }: BombProps) {
         tokens={expression}
         cursor={cursor}
         onSelectSlot={setCursorPosition}
+        onRemoveToken={removeToken}
         preview={previewResult}
       />
 

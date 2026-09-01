@@ -19,6 +19,7 @@ import {
   $hasTarget,
   $isEvaluating,
   insertToken,
+  removeToken,
   setCursorPosition,
   evaluateExpressionEvent,
   resetRound,
@@ -119,6 +120,7 @@ export function Game({ onExit, onLevelComplete }: GameProps) {
         tokens={expression}
         cursor={cursor}
         onSelectSlot={setCursorPosition}
+        onRemoveToken={removeToken}
         preview={previewResult}
       />
 
