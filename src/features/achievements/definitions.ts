@@ -19,6 +19,19 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description: 'Впервые получил число с экспоненциальной записью (e-нотация).',
   },
   {
+    id: AchievementId.Millionaire,
+    icon: '💰',
+    title: 'Миллионер',
+    description: 'Получил число больше миллиона.',
+  },
+
+  {
+    id: AchievementId.ElonMusk,
+    icon: '🚀',
+    title: 'Как тебе такое, Илон Маск?',
+    description: 'Получил число больше триллиона.',
+  },
+  {
     id: AchievementId.VeryBigNumber,
     icon: '🚀',
     title: 'ОЧЕНЬ БОЛЬШОЕ ЧИСЛО',
@@ -31,22 +44,10 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description: 'Получил ровно 67.',
   },
   {
-    id: AchievementId.Millionaire,
-    icon: '💰',
-    title: 'Миллионер',
-    description: 'Получил число больше миллиона.',
-  },
-  {
     id: AchievementId.Devil,
     icon: '😈',
     title: 'Дьявол',
     description: 'Получил ровно 666.',
-  },
-  {
-    id: AchievementId.ElonMusk,
-    icon: '🚀',
-    title: 'Как тебе такое, Илон Маск?',
-    description: 'Получил число больше триллиона.',
   },
 ]
 

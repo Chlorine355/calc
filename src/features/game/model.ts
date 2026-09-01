@@ -6,7 +6,11 @@ import { OPERATOR_UNLOCK_RULES } from '../../entities/level'
 import { generateLevel } from '../progression/levels'
 import { evaluateOne } from '../evaluation/engine'
 import { canInsertToken } from '../evaluation/syntax'
-import { serializedLog10, type SerializedBigNumber } from '../../shared/lib/formatHugeNumber'
+import {
+  serializedLog10,
+  formatLog10Target,
+  type SerializedBigNumber,
+} from '../../shared/lib/formatHugeNumber'
 import { isUnaryOnlyOperator, isSignOperator } from '../../entities/operator'
 import {
   loadProgress,
@@ -48,6 +52,8 @@ export const $score = game.createStore<number>(0)
 export const $bestScore = game.createStore<number>(loadProgress().highestScore)
 export const $validationError = game.createStore<string | null>(null)
 export const $targetScore = game.createStore<number>(0)
+// Есть ли у уровня цель (только обучающие захардкоженные уровни).
+export const $hasTarget = game.createStore<boolean>(false)
 // Сообщение о результате вычисления (например, «Цель не достигнута»)
 export const $resultMessage = game.createStore<string | null>(null)
 // Достижение «ОЧЕНЬ БОЛЬШОЕ ЧИСЛО»: true, когда игрок собрал астрономически
@@ -251,6 +257,7 @@ sample({
   target: $available,
 })
 sample({ clock: setLevel, fn: (lvl) => lvl.targetScore, target: $targetScore })
+sample({ clock: setLevel, fn: (lvl) => lvl.hasTarget, target: $hasTarget })
 
 // Открытие операторов по уровню
 sample({
@@ -451,15 +458,17 @@ sample({
 sample({ clock: evaluateExpressionFx.doneData, fn: () => null, target: $validationError })
 
 // Сообщение о результате: если цель не достигнута — показываем подсказку.
-// «ОЧЕНЬ БОЛЬШОЕ ЧИСЛО» — заведомый выигрыш.
+// «ОЧЕНЬ БОЛЬШОЕ ЧИСЛО» — заведомый выигрыш. Если у уровня нет цели
+// (генерируемый уровень) — сообщение об ошибке цели никогда не показываем.
 sample({
   clock: evaluateExpressionFx.doneData,
-  source: $targetScore,
-  fn: (target, outcome) => {
+  source: { target: $targetScore, hasTarget: $hasTarget },
+  fn: ({ target, hasTarget }, outcome) => {
     if (outcome.kind === 'huge') return null
+    if (!hasTarget) return null
     const score = serializedLog10(outcome.rounded)
     if (score >= target) return null
-    return `Цель не достигнута: нужно ${target.toFixed(2)}, у тебя ${score.toFixed(2)} (log10)`
+    return `Цель не достигнута: нужно ${formatLog10Target(target)}, у тебя ${formatLog10Target(score)}`
   },
   target: $resultMessage,
 })
@@ -516,6 +525,7 @@ export type GameStore = {
   resultMessage: Store<string | null>
   hugeAchievement: Store<boolean>
   targetScore: Store<number>
+  hasTarget: Store<boolean>
   isEvaluating: Store<boolean>
 }
 
@@ -531,6 +541,7 @@ export const gameStores: GameStore = {
   resultMessage: $resultMessage,
   hugeAchievement: $hugeAchievement,
   targetScore: $targetScore,
+  hasTarget: $hasTarget,
   isEvaluating: $isEvaluating,
 }
 

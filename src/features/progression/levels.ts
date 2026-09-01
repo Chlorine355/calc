@@ -85,10 +85,17 @@ export function generateLevel(level: number): Level {
   if (idx < LEVELS.length) {
     const spec = LEVELS[idx]
     const { targetScore, example } = greedyTarget(spec.numbers, spec.operators)
-    return { level, numbers: spec.numbers, operators: spec.operators, targetScore, example }
+    return {
+      level,
+      numbers: spec.numbers,
+      operators: spec.operators,
+      hasTarget: true,
+      targetScore,
+      example,
+    }
   }
 
-  // Бесконечный режим: случайный, но решаемый набор + растущая цель
+  // Бесконечный режим: случайный, но решаемый набор, без цели
   return generateRandomLevel(level)
 }
 
@@ -186,15 +193,23 @@ function generateRandomLevel(level: number): Level {
     const { targetScore, example } = greedyTarget(numbers, operators)
     if (!usesAllOperators(example, operators)) continue
 
-    // Цель = максимум, который нашёл жадный алгоритм. Пример её достигает,
-    // значит уровень решаем. Без инфляции — иначе цель станет недостижимой.
-    return { level, numbers, operators, targetScore, example }
+    // Генерируемый уровень без цели: игрок собирает любое выражение.
+    // targetScore/example всё равно считаем — по ним проверяем решаемость
+    // (usesAllOperators), но в интерфейсе цель не показываем.
+    return { level, numbers, operators, hasTarget: false, targetScore, example }
   }
 
-  // Запасной вариант: последний захардкоженный набор
+  // Запасной вариант: последний захардкоженный набор, но без цели
   const base = LEVELS[LEVELS.length - 1]
   const { targetScore, example } = greedyTarget(base.numbers, base.operators)
-  return { level, numbers: base.numbers, operators: base.operators, targetScore, example }
+  return {
+    level,
+    numbers: base.numbers,
+    operators: base.operators,
+    hasTarget: false,
+    targetScore,
+    example,
+  }
 }
 
 /**

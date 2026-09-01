@@ -15,6 +15,7 @@ import {
   $resultMessage,
   $hugeAchievement,
   $targetScore,
+  $hasTarget,
   $isEvaluating,
   insertToken,
   setCursorPosition,
@@ -46,6 +47,7 @@ export function Game({ onExit, onLevelComplete }: GameProps) {
   const resultMessage = useUnit($resultMessage)
   const hugeAchievement = useUnit($hugeAchievement)
   const targetScore = useUnit($targetScore)
+  const hasTarget = useUnit($hasTarget)
   const isEvaluating = useUnit($isEvaluating)
 
   useKeyboardInput(true)
@@ -72,8 +74,11 @@ export function Game({ onExit, onLevelComplete }: GameProps) {
     resetRound()
   }
 
-  // Достигнута ли цель: обычный результат или достижение «ОЧЕНЬ БОЛЬШОЕ ЧИСЛО»
-  const targetReached = (result !== null && score >= targetScore) || hugeAchievement
+  // Достигнута ли цель:
+  // - уровень с целью — результат превзошёл цель (или «ОЧЕНЬ БОЛЬШОЕ ЧИСЛО»);
+  // - уровень без цели (генерируемый) — любой валидный результат.
+  const targetReached =
+    (result !== null && (!hasTarget || score >= targetScore)) || hugeAchievement
 
   // При достижении цели сразу переходим на экран результата (без лишнего клика)
   useEffect(() => {
@@ -96,10 +101,12 @@ export function Game({ onExit, onLevelComplete }: GameProps) {
         </Button>
       </header>
 
-      {/* Цель */}
-      <div className={styles.target}>
-        Цель: превзойти <b>{formatLog10Target(targetScore)}</b>
-      </div>
+      {/* Цель (только у обучающих уровней) */}
+      {hasTarget && (
+        <div className={styles.target}>
+          Цель: превзойти <b>{formatLog10Target(targetScore)}</b>
+        </div>
+      )}
 
       {/* Поле выражения */}
       <ExpressionField
