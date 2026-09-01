@@ -461,7 +461,7 @@ sample({
     const parts: string[] = []
     for (const b of missingBinary) parts.push(`«${b}»`)
     for (const u of missingUnary) parts.push(`унарный «${u}»`)
-    if (parts.length === 0) return 'Используй все операторы из набора'
+    if (parts.length === 0) return 'Используй все операторы!'
     return `Используй все операторы: ${parts.join(', ')}`
   },
   target: $validationError,
