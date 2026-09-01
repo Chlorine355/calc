@@ -65,6 +65,13 @@ export function greedyTarget(
       },
     })
     for (const expr of candidates) {
+      // Игрок обязан использовать все унарные операторы (✓ в проверке
+      // allTokensUsed). Если унарный оператор есть в наборе, но не встретился
+      // в выражении — такое «максимальное» выражение недостижимо. Поэтому
+      // выбираем максимум только среди выражений, где все унарные применены.
+      // Для `!` это почти всегда выигрыш, но для `√` — всегда проигрыш, поэтому
+      // без фильтра √-уровни нерешаемы (√ только уменьшает значение).
+      if (!expressionUsesAllUnary(expr, unary)) continue
       const logVal = evalLog(expr)
       if (logVal > bestLog && isFinite(logVal)) {
         bestLog = logVal
@@ -74,6 +81,22 @@ export function greedyTarget(
   }
 
   return { targetScore: bestLog, example: bestExpr }
+}
+
+/**
+ * Правда, если выражение содержит все требуемые унарные операторы.
+ * Игрок обязан использовать каждый унарный токен ровно один раз.
+ */
+function expressionUsesAllUnary(expr: string, unary: string[]): boolean {
+  for (const u of unary) {
+    // `√` в выражении записывается как `sqrt(...)` (mathjs-форма).
+    if (u === '√') {
+      if (!expr.includes('sqrt(')) return false
+    } else if (!expr.includes(u)) {
+      return false
+    }
+  }
+  return true
 }
 
 /**
@@ -91,7 +114,7 @@ function applyUnaryToLeaf(
   const v = parseInt(n, 10)
   const res: { expr: string; factUsed: boolean }[] = [{ expr: n, factUsed: false }]
   if (unary.includes('√') && v >= 0 && Number.isInteger(Math.sqrt(v))) {
-    res.push({ expr: `√${n}`, factUsed: false })
+    res.push({ expr: `sqrt(${n})`, factUsed: false })
   }
   if (unary.includes('!') && v >= 0 && v <= 1000) {
     res.push({ expr: `${n}!`, factUsed: true })

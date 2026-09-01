@@ -26,9 +26,9 @@ export interface Level {
  * Правила открытия операторов по уровням.
  */
 export const OPERATOR_UNLOCK_RULES = [
-  { level: 10, operator: '^', label: 'Степень' },
-  { level: 20, operator: '!', label: 'Факториал' },
-  { level: 30, operator: '()', label: 'Скобки' },
+  { level: 9, operator: '^', label: 'Степень' },
+  { level: 13, operator: '!', label: 'Факториал' },
+  { level: 17, operator: '()', label: 'Скобки' },
 ]
 
 /**

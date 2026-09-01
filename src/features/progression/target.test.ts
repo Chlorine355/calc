@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { greedyTarget } from './target'
-import { generateLevel } from './levels'
+import { generateLevel, usesAllOperators, MAX_HARDCODED_LEVEL } from './levels'
 import { evaluateString } from '../evaluation/engine'
 import { serializedLog10 } from '../../shared/lib/formatHugeNumber'
 
@@ -51,18 +51,18 @@ describe('generateLevel', () => {
     expect(lvl.example.length).toBeGreaterThan(0)
   })
 
-  it('уровень 10 открывает степень', () => {
-    const lvl = generateLevel(10)
+  it('уровень 9 открывает степень', () => {
+    const lvl = generateLevel(9)
     expect(lvl.operators).toContain('^')
   })
 
-  it('уровень 20 открывает факториал', () => {
-    const lvl = generateLevel(20)
+  it('уровень 13 открывает факториал', () => {
+    const lvl = generateLevel(13)
     expect(lvl.operators).toContain('!')
   })
 
-  it('уровень 30 открывает скобки', () => {
-    const lvl = generateLevel(30)
+  it('уровень 17 открывает скобки', () => {
+    const lvl = generateLevel(17)
     expect(lvl.operators).toContain('()')
   })
 
@@ -70,5 +70,18 @@ describe('generateLevel', () => {
     const lvl = generateLevel(100)
     expect(lvl.level).toBe(100)
     expect(lvl.targetScore).toBeGreaterThan(0)
+  })
+
+  it('каждый обучающий уровень решаем и использует все обязательные операторы', () => {
+    for (let level = 1; level <= MAX_HARDCODED_LEVEL; level++) {
+      const lvl = generateLevel(level)
+      expect(lvl.hasTarget).toBe(true)
+      expect(lvl.targetScore).toBeGreaterThan(0)
+      expect(lvl.example.length).toBeGreaterThan(0)
+      // Обязательные операторы — бинарные и унарные. Скобки опциональны
+      // (игрок может собрать то же значение без них), поэтому их не требуем.
+      const required = lvl.operators.filter((o) => o !== '()')
+      expect(usesAllOperators(lvl.example, required)).toBe(true)
+    }
   })
 })
