@@ -56,14 +56,15 @@ describe('generateLevel', () => {
     expect(lvl.operators).toContain('^')
   })
 
-  it('уровень 13 открывает факториал', () => {
+  it('уровень 13 открывает факториал и скобки', () => {
     const lvl = generateLevel(13)
     expect(lvl.operators).toContain('!')
+    expect(lvl.operators).toContain('()')
   })
 
-  it('уровень 17 открывает скобки', () => {
-    const lvl = generateLevel(17)
-    expect(lvl.operators).toContain('()')
+  it('уровень 15 открывает корень', () => {
+    const lvl = generateLevel(15)
+    expect(lvl.operators).toContain('√')
   })
 
   it('бесконечный режим работает за пределами списка', () => {

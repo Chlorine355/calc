@@ -3,8 +3,9 @@ import { Menu } from '../pages/Menu/Menu'
 import { Game } from '../pages/Game/Game'
 import { Result } from '../pages/Result/Result'
 import { Achievements } from '../pages/Achievements/Achievements'
+import { Bomb } from '../pages/Bomb/Bomb'
 
-type Screen = 'menu' | 'game' | 'result' | 'achievements'
+type Screen = 'menu' | 'game' | 'result' | 'achievements' | 'bomb'
 
 /**
  * Корневой экран с простым состоянием-роутером.
@@ -17,6 +18,7 @@ export function App() {
       {screen === 'menu' && (
         <Menu
           onPlay={() => setScreen('game')}
+          onBomb={() => setScreen('bomb')}
           onAchievements={() => setScreen('achievements')}
         />
       )}
@@ -30,6 +32,7 @@ export function App() {
       {screen === 'achievements' && (
         <Achievements onBack={() => setScreen('menu')} />
       )}
+      {screen === 'bomb' && <Bomb onExit={() => setScreen('menu')} />}
     </div>
   )
 }

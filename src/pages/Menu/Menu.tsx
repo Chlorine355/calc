@@ -3,25 +3,32 @@ import { useUnit } from 'effector-react'
 import { Button } from '../../shared/ui/Button/Button'
 import { Card } from '../../shared/ui/Card/Card'
 import { $currentLevel, $bestScore, startGame } from '../../features/game/model'
+import { $bombHighScore } from '../../features/bomb/model'
 import styles from './Menu.module.css'
 
 interface MenuProps {
   onPlay: () => void
+  onBomb: () => void
   onAchievements: () => void
 }
 
 /**
  * Экран 1: Главное меню.
  */
-export function Menu({ onPlay, onAchievements }: MenuProps) {
+export function Menu({ onPlay, onBomb, onAchievements }: MenuProps) {
   const currentLevel = useUnit($currentLevel)
   const bestScore = useUnit($bestScore)
+  const bombHighScore = useUnit($bombHighScore)
   const [showHelp, setShowHelp] = useState(false)
 
   const handlePlay = () => {
     // Продолжаем с уровня, на котором остановился игрок
     startGame(currentLevel)
     onPlay()
+  }
+
+  const handleBomb = () => {
+    onBomb()
   }
 
   return (
@@ -35,7 +42,7 @@ export function Menu({ onPlay, onAchievements }: MenuProps) {
         <Button size="lg" onClick={handlePlay}>
           Играть
         </Button>
-        <Button size="lg" variant="danger" onClick={handlePlay} disabled>
+        <Button size="lg" variant="danger" onClick={handleBomb}>
           Часовая бомба
         </Button>
         <Button size="lg" variant="warning" onClick={handlePlay} disabled>
@@ -58,6 +65,11 @@ export function Menu({ onPlay, onAchievements }: MenuProps) {
         <div className={styles.stat}>
           <span className={styles.statValue}>{Math.round(bestScore)}</span>
           <span className={styles.statLabel}>Рекорд</span>
+        </div>
+        <div className={styles.statDivider} />
+        <div className={styles.stat}>
+          <span className={styles.statValue}>{bombHighScore}</span>
+          <span className={styles.statLabel}>Бомба</span>
         </div>
       </Card>
 

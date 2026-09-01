@@ -77,6 +77,11 @@ export const $resultMessage = game.createStore<string | null>(null)
 // огромное выражение и «победил» им (сильно, но не засчитывается в рекорд числа).
 export const $hugeAchievement = game.createStore<boolean>(false)
 export const $unlockedOperators = game.createStore<string[]>(['+', '-', '*', '/'])
+// Режим игры: обычный или «Часовая бомба». В бомбе не обновляем обычные
+// очки/рекорд (у неё свои), поэтому гейтим эти сэмплы по режиму.
+export const $mode = game.createStore<'normal' | 'bomb'>('normal')
+export const setMode = game.createEvent<'normal' | 'bomb'>()
+sample({ clock: setMode, fn: (m) => m, target: $mode })
 
 // --- События ---
 export const insertToken = game.createEvent<ExpressionToken>()
@@ -90,8 +95,10 @@ export const resetRound = game.createEvent()
 export const nextLevel = game.createEvent()
 export const startGame = game.createEvent<number>()
 
-// Вспомогательное событие для установки уровня (внутреннее)
-const setLevel = game.createEvent<Level>()
+// Вспомогательное событие для установки уровня (внутреннее).
+// Экспортируется, чтобы режим «Часовая бомба» мог подставлять свои уровни
+// в общие сторы игры (рука, операторы, цель).
+export const setLevel = game.createEvent<Level>()
 // Срабатывает только когда токен реально вставлен (прошёл валидацию)
 const tokenInserted = game.createEvent<ExpressionToken>()
 
@@ -250,7 +257,9 @@ function allNumbersUsed(expression: ExpressionToken[], numbers: number[]): boole
 
 // --- Логика ---
 
-// Старт игры: загружаем уровень
+// Старт игры: загружаем уровень. Обычный режим — сбрасываем режим на 'normal'
+// (если до этого играли в «Часовую бомбу»), чтобы очки/рекорд снова писались.
+sample({ clock: startGame, fn: () => 'normal' as const, target: $mode })
 sample({ clock: startGame, fn: (level) => generateLevel(level), target: setLevel })
 // При старте нового уровня сбрасываем состояние раунда
 sample({ clock: startGame, target: resetRound })
@@ -440,8 +449,9 @@ sample({
 })
 sample({
   clock: evaluateExpressionFx.doneData,
-  filter: (outcome) => outcome.kind === 'ok',
-  fn: (outcome) =>
+  source: $mode,
+  filter: (mode, outcome) => mode === 'normal' && outcome.kind === 'ok',
+  fn: (_, outcome) =>
     serializedLog10((outcome as { kind: 'ok'; rounded: SerializedBigNumber }).rounded),
   target: $score,
 })
@@ -450,7 +460,8 @@ sample({
 // сбрасываем score и result (чтобы не считать достижением «заменённую цель»).
 sample({
   clock: evaluateExpressionFx.doneData,
-  filter: (outcome) => outcome.kind === 'huge',
+  source: $mode,
+  filter: (mode, outcome) => mode === 'normal' && outcome.kind === 'huge',
   fn: () => 0,
   target: $score,
 })
@@ -462,8 +473,9 @@ sample({
 })
 sample({
   clock: evaluateExpressionFx.doneData,
-  filter: (outcome) => outcome.kind === 'ok',
-  fn: (outcome) => recordHighScore(serializedLog10((outcome as { kind: 'ok'; rounded: SerializedBigNumber }).rounded)),
+  source: $mode,
+  filter: (mode, outcome) => mode === 'normal' && outcome.kind === 'ok',
+  fn: (_, outcome) => recordHighScore(serializedLog10((outcome as { kind: 'ok'; rounded: SerializedBigNumber }).rounded)),
   target: $bestScore,
 })
 sample({
@@ -515,7 +527,12 @@ sample({
   fn: (level) => {
     const prev = loadProgress()
     const highest = Math.max(prev.highestLevel, level)
-    return { currentLevel: level, highestLevel: highest, highestScore: prev.highestScore }
+    return {
+      currentLevel: level,
+      highestLevel: highest,
+      highestScore: prev.highestScore,
+      bombHighScore: prev.bombHighScore,
+    }
   },
   target: saveProgressFx,
 })

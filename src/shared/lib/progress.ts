@@ -5,6 +5,7 @@
  * - `currentLevel` — уровень, на котором остановился игрок (точка продолжения)
  * - `highestLevel` — максимальный достигнутый уровень
  * - `highestScore` — рекорд: максимальные очки (log10), начисленные за выражение
+ * - `bombHighScore` — рекорд режима «Часовая бомба»: сколько примеров решено за минуту
  */
 export const PROGRESS_KEY = 'calc-progress'
 
@@ -12,12 +13,14 @@ export interface ProgressData {
   currentLevel: number
   highestLevel: number
   highestScore: number
+  bombHighScore: number
 }
 
 const DEFAULT_PROGRESS: ProgressData = {
   currentLevel: 1,
   highestLevel: 1,
   highestScore: 0,
+  bombHighScore: 0,
 }
 
 function sanitize(n: unknown): number {
@@ -40,6 +43,7 @@ export function loadProgress(): ProgressData {
       currentLevel: sanitize(data.currentLevel),
       highestLevel: sanitize(data.highestLevel),
       highestScore: sanitizeScore(data.highestScore),
+      bombHighScore: sanitizeScore(data.bombHighScore),
     }
   } catch {
     return { ...DEFAULT_PROGRESS }
@@ -65,5 +69,16 @@ export function recordHighScore(score: number): number {
   const prev = loadProgress()
   const best = Math.max(prev.highestScore, score)
   saveProgress({ ...prev, highestScore: best })
+  return best
+}
+
+/**
+ * Обновляет рекорд режима «Часовая бомба»: сохраняет максимум из текущего
+ * и нового значения. Возвращает актуальный рекорд.
+ */
+export function recordBombHighScore(score: number): number {
+  const prev = loadProgress()
+  const best = Math.max(prev.bombHighScore, score)
+  saveProgress({ ...prev, bombHighScore: best })
   return best
 }

@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { loadProgress, saveProgress, recordHighScore, PROGRESS_KEY } from './progress'
+import {
+  loadProgress,
+  saveProgress,
+  recordHighScore,
+  recordBombHighScore,
+  PROGRESS_KEY,
+} from './progress'
 
 // Node-окружение vitest не имеет localStorage — подменяем простым хранилищем.
 function createStorageMock(): Storage {
@@ -32,17 +38,32 @@ describe('progress persistence', () => {
   })
 
   it('возвращает стартовые значения, если ничего не сохранено', () => {
-    expect(loadProgress()).toEqual({ currentLevel: 1, highestLevel: 1, highestScore: 0 })
+    expect(loadProgress()).toEqual({
+      currentLevel: 1,
+      highestLevel: 1,
+      highestScore: 0,
+      bombHighScore: 0,
+    })
   })
 
   it('сохраняет и читает прогресс', () => {
-    saveProgress({ currentLevel: 7, highestLevel: 12, highestScore: 3.5 })
-    expect(loadProgress()).toEqual({ currentLevel: 7, highestLevel: 12, highestScore: 3.5 })
+    saveProgress({ currentLevel: 7, highestLevel: 12, highestScore: 3.5, bombHighScore: 4 })
+    expect(loadProgress()).toEqual({
+      currentLevel: 7,
+      highestLevel: 12,
+      highestScore: 3.5,
+      bombHighScore: 4,
+    })
   })
 
   it('переживает повреждённые данные', () => {
     localStorage.setItem(PROGRESS_KEY, 'не-json')
-    expect(loadProgress()).toEqual({ currentLevel: 1, highestLevel: 1, highestScore: 0 })
+    expect(loadProgress()).toEqual({
+      currentLevel: 1,
+      highestLevel: 1,
+      highestScore: 0,
+      bombHighScore: 0,
+    })
   })
 
   it('отбрасывает некорректные значения', () => {
@@ -50,13 +71,27 @@ describe('progress persistence', () => {
       PROGRESS_KEY,
       JSON.stringify({ currentLevel: -3, highestLevel: 'x', highestScore: -1 })
     )
-    expect(loadProgress()).toEqual({ currentLevel: 1, highestLevel: 1, highestScore: 0 })
+    expect(loadProgress()).toEqual({
+      currentLevel: 1,
+      highestLevel: 1,
+      highestScore: 0,
+      bombHighScore: 0,
+    })
   })
 
   it('recordHighScore сохраняет максимум', () => {
-    saveProgress({ currentLevel: 1, highestLevel: 1, highestScore: 2 })
+    saveProgress({ currentLevel: 1, highestLevel: 1, highestScore: 2, bombHighScore: 0 })
     expect(recordHighScore(5)).toBe(5)
     expect(recordHighScore(3)).toBe(5)
     expect(loadProgress().highestScore).toBe(5)
+  })
+
+  it('recordBombHighScore сохраняет максимум отдельно от обычного рекорда', () => {
+    saveProgress({ currentLevel: 1, highestLevel: 1, highestScore: 2, bombHighScore: 0 })
+    expect(recordBombHighScore(7)).toBe(7)
+    expect(recordBombHighScore(4)).toBe(7)
+    expect(loadProgress().bombHighScore).toBe(7)
+    // обычный рекорд не затронут
+    expect(loadProgress().highestScore).toBe(2)
   })
 })

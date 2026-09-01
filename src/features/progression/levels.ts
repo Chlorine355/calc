@@ -59,20 +59,34 @@ const LEVELS: LevelSpec[] = [
 export function generateLevel(level: number): Level {
   const idx = level - 1
   if (idx < LEVELS.length) {
-    const spec = LEVELS[idx]
-    const { targetScore, example } = greedyTarget(spec.numbers, spec.operators)
-    return {
-      level,
-      numbers: spec.numbers,
-      operators: spec.operators,
-      hasTarget: true,
-      targetScore,
-      example,
-    }
+    return buildLevel(LEVELS[idx], level, true)
   }
 
-  // Бесконечный режим: случайный, но решаемый набор, без цели
-  return generateRandomLevel(level)
+  // Бесконечный режим: случайный, но решаемый набор, без цели.
+  // Число чисел растёт с уровнем, но не больше 6.
+  const n = Math.min(4 + Math.floor((level - LEVELS.length) / 4), 6)
+  return generateRandomLevel(n, level, false)
+}
+
+/**
+ * Собирает Level из набора чисел и операторов: считает цель и пример-решение
+ * жадным алгоритмом. Общий для всех режимов (захардкоженные уровни,
+ * бесконечный режим, «Часовая бомба»).
+ */
+function buildLevel(
+  spec: LevelSpec,
+  level: number,
+  hasTarget: boolean,
+): Level {
+  const { targetScore, example } = greedyTarget(spec.numbers, spec.operators)
+  return {
+    level,
+    numbers: spec.numbers,
+    operators: spec.operators,
+    hasTarget,
+    targetScore,
+    example,
+  }
 }
 
 // --- Случайная генерация уровней (после захардкоженных) ---
@@ -156,11 +170,13 @@ export function usesAllOperators(example: string, operators: string[]): boolean 
  * - бинарных операторов ровно (числа − 1)
  * - скобки парные (токен '()'), корень √ — унарный
  * - пример цели использует все операторы (иначе перегенерируем)
+ *
+ * @param n — число чисел в наборе.
+ * @param level — номер уровня (для поля level в результате).
+ * @param hasTarget — показывать ли цель. Для обычного бесконечного режима — false
+ *   (игрок собирает любое выражение); для «Часовой бомбы» — true (нужно превзойти цель).
  */
-function generateRandomLevel(level: number): Level {
-  // Число чисел растёт с уровнем, но не больше 6
-  const n = Math.min(4 + Math.floor((level - LEVELS.length) / 4), 6)
-
+function generateRandomLevel(n: number, level: number, hasTarget: boolean): Level {
   for (let attempt = 0; attempt < 20; attempt++) {
     const unary = randomUnary()
     const needSquare = unary.includes('√')
@@ -169,26 +185,25 @@ function generateRandomLevel(level: number): Level {
     const hasParens = Math.random() < 0.5
     const operators = [...binary, ...unary, ...(hasParens ? ['()'] : [])]
 
-    const { targetScore, example } = greedyTarget(numbers, operators)
+    const { example } = greedyTarget(numbers, operators)
     if (!usesAllOperators(example, operators)) continue
 
-    // Генерируемый уровень без цели: игрок собирает любое выражение.
     // targetScore/example всё равно считаем — по ним проверяем решаемость
-    // (usesAllOperators), но в интерфейсе цель не показываем.
-    return { level, numbers, operators, hasTarget: false, targetScore, example }
+    // (usesAllOperators), но в интерфейсе цель показываем только если hasTarget.
+    return buildLevel({ numbers, operators }, level, hasTarget)
   }
 
-  // Запасной вариант: последний захардкоженный набор, но без цели
-  const base = LEVELS[LEVELS.length - 1]
-  const { targetScore, example } = greedyTarget(base.numbers, base.operators)
-  return {
-    level,
-    numbers: base.numbers,
-    operators: base.operators,
-    hasTarget: false,
-    targetScore,
-    example,
-  }
+  // Запасной вариант: последний захардкоженный набор
+  return buildLevel(LEVELS[LEVELS.length - 1], level, hasTarget)
+}
+
+/**
+ * Генерирует случайный уровень для режима «Часовая бомба»: всегда с целью.
+ * Число чисел фиксировано (4), чтобы примеры были решаемыми за короткое время.
+ * Не зависит от номера уровня (в бомбе нет прогрессии уровней).
+ */
+export function generateBombLevel(): Level {
+  return generateRandomLevel(4, 1, true)
 }
 
 /**
