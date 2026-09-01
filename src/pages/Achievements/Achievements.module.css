@@ -17,7 +17,7 @@
 }
 
 .title {
-  font-size: 32px;
+  font-size: var(--achievement-title);
   font-weight: 900;
   background: linear-gradient(135deg, var(--accent-hover), #e0b4ff);
   -webkit-background-clip: text;
@@ -25,17 +25,23 @@
   color: transparent;
   text-align: center;
   flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .counter {
   font-family: var(--font-mono);
-  font-size: 18px;
+  font-size: var(--achievement-counter);
   font-weight: 700;
   color: var(--text-secondary);
   background: var(--bg-card);
   border: 1px solid var(--token-paren);
   border-radius: 999px;
   padding: 6px 14px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .list {
@@ -64,24 +70,26 @@
 }
 
 .icon {
-  font-size: 36px;
+  font-size: var(--achievement-icon);
   flex-shrink: 0;
   filter: drop-shadow(0 0 12px var(--accent-glow));
 }
 
 .body {
   flex: 1;
+  min-width: 0;
 }
 
 .itemTitle {
-  font-size: 18px;
+  font-size: var(--achievement-item-title);
   font-weight: 800;
   color: var(--text-primary);
   margin-bottom: 4px;
+  overflow-wrap: anywhere;
 }
 
 .itemDesc {
-  font-size: 14px;
+  font-size: var(--achievement-item-desc);
   color: var(--text-secondary);
 }
 

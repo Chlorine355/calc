@@ -27,7 +27,6 @@ export function Menu({ onPlay, onAchievements }: MenuProps) {
   return (
     <div className={styles.menu}>
       <div className={styles.logo}>
-        <span className={styles.logoIcon}>🧮</span>
         <h1 className={styles.title}>Calc</h1>
         <p className={styles.subtitle}>short for calculator</p>
       </div>
@@ -36,10 +35,10 @@ export function Menu({ onPlay, onAchievements }: MenuProps) {
         <Button size="lg" onClick={handlePlay}>
           Играть
         </Button>
-        <Button size="lg" variant="danger" onClick={handlePlay}>
+        <Button size="lg" variant="danger" onClick={handlePlay} disabled>
           Часовая бомба
         </Button>
-        <Button size="lg" variant="warning" onClick={handlePlay}>
+        <Button size="lg" variant="warning" onClick={handlePlay} disabled>
           Ежедневное испытание
         </Button>
         <Button variant="secondary" onClick={onAchievements}>

@@ -26,6 +26,13 @@
   --radius: 14px;
   --radius-sm: 8px;
 
+  /* Типографика достижений: адаптивный размер (clamp между мобильным и десктопом) */
+  --achievement-title: clamp(20px, 5vw, 32px);
+  --achievement-counter: clamp(14px, 3vw, 18px);
+  --achievement-item-title: clamp(16px, 3.5vw, 18px);
+  --achievement-item-desc: clamp(13px, 2.5vw, 14px);
+  --achievement-icon: clamp(30px, 6vw, 36px);
+
   --shadow-card: 0 6px 20px rgba(0, 0, 0, 0.35);
   --shadow-glow: 0 0 30px var(--accent-glow);
 
