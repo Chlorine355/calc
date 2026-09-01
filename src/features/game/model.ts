@@ -45,6 +45,22 @@ export const $available = game.createStore<{
   parenPairs: 0,
 })
 export const $expression = game.createStore<ExpressionToken[]>([])
+
+/**
+ * Живой предпросмотр результата: считаем по текущему выражению без нажатия «=».
+ * evaluateOne безопасен на каждом вводе — magnitude-guard коротко замыкает
+ * астрономически огромные выражения до evaluate(), поэтому воркер не роняется.
+ * Показываем только для синтаксически корректного выражения.
+ */
+export const $previewResult = $expression.map((tokens) => {
+  if (tokens.length === 0) return null
+  const res = evaluateOne(tokens)
+  if (!res.ok) return null
+  if (res.huge) return 'ОЧЕНЬ БОЛЬШОЕ ЧИСЛО'
+  if (!res.rounded) return null
+  if (res.rounded.exponent === 0) return res.rounded.value
+  return `${res.rounded.value}e${res.rounded.exponent}`
+})
 export const $cursorPosition = game.createStore<number>(0)
 export const $result = game.createStore<SerializedBigNumber | null>(null)
 export const $score = game.createStore<number>(0)
@@ -519,6 +535,7 @@ export type GameStore = {
   expression: Store<ExpressionToken[]>
   cursorPosition: Store<number>
   result: Store<SerializedBigNumber | null>
+  previewResult: Store<string | null>
   score: Store<number>
   bestScore: Store<number>
   validationError: Store<string | null>
@@ -535,6 +552,7 @@ export const gameStores: GameStore = {
   expression: $expression,
   cursorPosition: $cursorPosition,
   result: $result,
+  previewResult: $previewResult,
   score: $score,
   bestScore: $bestScore,
   validationError: $validationError,

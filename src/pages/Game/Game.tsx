@@ -10,6 +10,7 @@ import {
   $expression,
   $cursorPosition,
   $result,
+  $previewResult,
   $score,
   $validationError,
   $resultMessage,
@@ -42,6 +43,7 @@ export function Game({ onExit, onLevelComplete }: GameProps) {
   const expression = useUnit($expression)
   const cursor = useUnit($cursorPosition)
   const result = useUnit($result)
+  const previewResult = useUnit($previewResult)
   const score = useUnit($score)
   const validationError = useUnit($validationError)
   const resultMessage = useUnit($resultMessage)
@@ -102,9 +104,13 @@ export function Game({ onExit, onLevelComplete }: GameProps) {
       </header>
 
       {/* Цель (только у обучающих уровней) */}
-      {hasTarget && (
+      {hasTarget ? (
         <div className={styles.target}>
           Цель: превзойти <b>{formatLog10Target(targetScore)}</b>
+        </div>
+      ) : (
+        <div className={styles.target}>
+          Цель: собрать <b>любое</b> число
         </div>
       )}
 
@@ -113,6 +119,7 @@ export function Game({ onExit, onLevelComplete }: GameProps) {
         tokens={expression}
         cursor={cursor}
         onSelectSlot={setCursorPosition}
+        preview={previewResult}
       />
 
       {/* Ошибка валидации */}

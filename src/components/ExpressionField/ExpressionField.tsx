@@ -5,6 +5,8 @@ interface ExpressionFieldProps {
   tokens: ExpressionToken[]
   cursor: number
   onSelectSlot: (index: number) => void
+  /** Живой предпросмотр результата (полупрозрачный «= число» после токенов). */
+  preview?: string | null
 }
 
 /**
@@ -12,11 +14,16 @@ interface ExpressionFieldProps {
  * Курсор рисуется в зазоре (слоте) между токенами; клик по слоту
  * перемещает курсор в эту позицию.
  */
-export function ExpressionField({ tokens, cursor, onSelectSlot }: ExpressionFieldProps) {
+export function ExpressionField({
+  tokens,
+  cursor,
+  onSelectSlot,
+  preview,
+}: ExpressionFieldProps) {
   if (tokens.length === 0) {
     return (
       <div className={styles.field + ' ' + styles['field--empty']}>
-        <span className={styles.placeholder}>Собери наибольшее выражение…</span>
+        <span className={styles.placeholder}>Собери выражение…</span>
       </div>
     )
   }
@@ -47,6 +54,14 @@ export function ExpressionField({ tokens, cursor, onSelectSlot }: ExpressionFiel
           {tokens.length === cursor ? <Cursor /> : null}
         </button>
       </span>
+
+      {/* Живой предпросмотр результата */}
+      {preview && (
+        <span className={styles.preview}>
+          <span className={styles.previewEquals}>=</span>
+          <span className={styles.previewValue}>{preview}</span>
+        </span>
+      )}
     </div>
   )
 }
