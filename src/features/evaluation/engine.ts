@@ -6,7 +6,7 @@ import {
   type SerializedBigNumber,
 } from '../../shared/lib/formatHugeNumber'
 import { validateSyntax, SYNTAX_MESSAGES } from './syntax'
-import { isAstronomicallyHuge } from './magnitude'
+import { isAstronomicallyHuge, isHugeNegative } from './magnitude'
 
 /**
  * Экземпляр mathjs с включённым BigNumber.
@@ -31,6 +31,8 @@ export interface EvaluationResult {
   error?: string
   /** true, если результат астрономически огромен (ОЧЕНЬ БОЛЬШОЕ ЧИСЛО). */
   huge?: boolean
+  /** Знак астрономически огромного результата (true — отрицательный). Только при huge. */
+  hugeNegative?: boolean
 }
 
 /**
@@ -61,7 +63,7 @@ export function evaluateString(expr: string): EvaluationResult {
     // целое с миллионами разрядов и роняет воркер ДО того, как сработает try/catch.
     // Оцениваем порядок по дереву и коротко замыкаем, не вызывая evaluate().
     if (isAstronomicallyHuge(node)) {
-      return { ok: true, huge: true }
+      return { ok: true, huge: true, hugeNegative: isHugeNegative(node) }
     }
 
     let value: unknown

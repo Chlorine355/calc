@@ -9,6 +9,8 @@ export interface SerializedBigNumber {
   value: string
   /** Порядок (показатель степени 10) */
   exponent: number
+  /** true, если число отрицательное. Для больших чисел знак не входит в value. */
+  negative: boolean
 }
 
 /**
@@ -99,11 +101,11 @@ export function formatLog10Target(log10: number): string {
  */
 export function serializeBigNumber(bn: BigNumber): SerializedBigNumber {
   if (bn.isNaN() || !bn.isFinite()) {
-    return { value: bn.toString(), exponent: 0 }
+    return { value: bn.toString(), exponent: 0, negative: false }
   }
   const abs = bn.abs()
   if (abs.lt(1e6)) {
-    return { value: bn.toString(), exponent: 0 }
+    return { value: bn.toString(), exponent: 0, negative: bn.isNegative() }
   }
   const exp = abs.log(10).floor().toNumber()
   // toExponential даёт "2.40e+543" — берём мантиссу до 'e'
@@ -111,6 +113,7 @@ export function serializeBigNumber(bn: BigNumber): SerializedBigNumber {
   return {
     value: mantissa,
     exponent: exp,
+    negative: bn.isNegative(),
   }
 }
 
@@ -134,19 +137,21 @@ function stripTrailingZeros(s: string): string {
  * отрицательные результаты всё равно дают 0.
  */
 export function roundBigNumber(bn: BigNumber): SerializedBigNumber {
-  if (bn.isNaN()) return { value: 'NaN', exponent: 0 }
-  if (!bn.isFinite()) return { value: bn.isNegative() ? '-∞' : '∞', exponent: 0 }
+  if (bn.isNaN()) return { value: 'NaN', exponent: 0, negative: false }
+  if (!bn.isFinite()) {
+    return { value: bn.isNegative() ? '-∞' : '∞', exponent: 0, negative: bn.isNegative() }
+  }
   const negative = bn.isNegative()
   const abs = bn.abs()
   if (abs.lt(1e6)) {
     const num = abs.toNumber()
     const rounded = num.toFixed(4)
     const cleaned = stripTrailingZeros(rounded)
-    return { value: (negative ? '-' : '') + cleaned, exponent: 0 }
+    return { value: (negative ? '-' : '') + cleaned, exponent: 0, negative }
   }
   const expStr = abs.toExponential(4).split('e')[1]
   const exp = parseInt(expStr, 10)
   const mantStr = abs.toExponential(4).split('e')[0]
   const cleaned = stripTrailingZeros(mantStr)
-  return { value: cleaned, exponent: exp }
+  return { value: cleaned, exponent: exp, negative }
 }

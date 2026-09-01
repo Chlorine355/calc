@@ -50,7 +50,7 @@ describe('log10', () => {
 
 describe('serializeBigNumber', () => {
   it('сериализует маленькое число', () => {
-    expect(serializeBigNumber(bn(42))).toEqual({ value: '42', exponent: 0 })
+    expect(serializeBigNumber(bn(42))).toEqual({ value: '42', exponent: 0, negative: false })
   })
 
   it('сериализует большое число в мантиссу и порядок', () => {

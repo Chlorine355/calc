@@ -22,7 +22,7 @@ sample({
     // Формируем строку результата из сериализованного числа
     if (result.kind === 'huge') return 'ОЧЕНЬ БОЛЬШОЕ ЧИСЛО'
     if (result.rounded.exponent === 0) return result.rounded.value
-    return `${result.rounded.value}e${result.rounded.exponent}`
+    return `${result.rounded.negative ? '-' : ''}${result.rounded.value}e${result.rounded.exponent}`
   },
   target: $lastResultString,
 })

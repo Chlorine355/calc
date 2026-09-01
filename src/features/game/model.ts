@@ -58,8 +58,9 @@ export const $previewResult = $expression.map((tokens) => {
   if (!res.ok) return null
   if (res.huge) return 'ОЧЕНЬ БОЛЬШОЕ ЧИСЛО'
   if (!res.rounded) return null
+  // Малая величина: знак уже в value («-5»). Большая (мантисса): знак отдельно.
   if (res.rounded.exponent === 0) return res.rounded.value
-  return `${res.rounded.value}e${res.rounded.exponent}`
+  return `${res.rounded.negative ? '-' : ''}${res.rounded.value}e${res.rounded.exponent}`
 })
 export const $cursorPosition = game.createStore<number>(0)
 export const $result = game.createStore<SerializedBigNumber | null>(null)
@@ -97,7 +98,7 @@ const tokenInserted = game.createEvent<ExpressionToken>()
 /** Исход вычисления: обычное число или «ОЧЕНЬ БОЛЬШОЕ ЧИСЛО». */
 export type EvaluationOutcome =
   | { kind: 'ok'; rounded: SerializedBigNumber }
-  | { kind: 'huge' }
+  | { kind: 'huge'; negative: boolean }
 
 // --- Эффекты ---
 export const evaluateExpressionFx = game.createEffect<
@@ -108,7 +109,7 @@ export const evaluateExpressionFx = game.createEffect<
   handler: (tokens) => {
     const res = evaluateOne(tokens)
     if (res.huge) {
-      return { kind: 'huge' }
+      return { kind: 'huge', negative: res.hugeNegative ?? false }
     }
     if (!res.ok || !res.rounded) {
       throw new Error(res.error ?? 'Ошибка вычисления')

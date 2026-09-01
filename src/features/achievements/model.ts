@@ -42,8 +42,19 @@ function earnedIds(state: AchievementsState, outcome: EvaluationOutcome): Achiev
     ids.push(AchievementId.VeryBigNumber)
   }
 
+  // Абсолютный ноль: отрицательное астрономически огромное число
+  // (выход за пределы расчёта, «ОЧЕНЬ БОЛЬШОЕ ЧИСЛО»). Обычные представимые
+  // отрицательные числа (exponent>=1, например -2.6e18) НЕ считаются.
+  if (
+    !state[AchievementId.AbsoluteZero] &&
+    outcome.kind === 'huge' &&
+    outcome.negative
+  ) {
+    ids.push(AchievementId.AbsoluteZero)
+  }
+
   if (outcome.kind === 'ok') {
-    const { value, exponent } = outcome.rounded
+    const { value, exponent, negative } = outcome.rounded
     const log10 = serializedLog10(outcome.rounded)
 
     // Экспоненциальная запись: порядок >= 1 (число >= 10).
@@ -69,6 +80,34 @@ function earnedIds(state: AchievementsState, outcome: EvaluationOutcome): Achiev
     // Как тебе такое, Илон Маск?: больше триллиона.
     if (!state[AchievementId.ElonMusk] && log10 > TRILLION_LOG10) {
       ids.push(AchievementId.ElonMusk)
+    }
+
+    // Негативное мышление: отрицательное число.
+    if (!state[AchievementId.NegativeThinking] && negative) {
+      ids.push(AchievementId.NegativeThinking)
+    }
+
+    // Не отлично, не ужасно: ровно 0.
+    if (!state[AchievementId.Zero] && exponent === 0 && parseFloat(value) === 0) {
+      ids.push(AchievementId.Zero)
+    }
+
+    // Рукописи не горят: ровно 451.
+    if (
+      !state[AchievementId.Fahrenheit451] &&
+      exponent === 0 &&
+      parseFloat(value) === 451
+    ) {
+      ids.push(AchievementId.Fahrenheit451)
+    }
+
+    // Сцилла и Харибда: ровно 68.
+    if (
+      !state[AchievementId.ScyllaCharybdis] &&
+      exponent === 0 &&
+      parseFloat(value) === 68
+    ) {
+      ids.push(AchievementId.ScyllaCharybdis)
     }
   }
 

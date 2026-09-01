@@ -14,6 +14,11 @@ export const AchievementId = {
   Millionaire: 'millionaire',
   Devil: 'devil',
   ElonMusk: 'elon-musk',
+  NegativeThinking: 'negative-thinking',
+  Zero: 'zero',
+  Fahrenheit451: 'fahrenheit-451',
+  ScyllaCharybdis: 'scylla-charybdis',
+  AbsoluteZero: 'absolute-zero',
 } as const
 
 export type AchievementId = (typeof AchievementId)[keyof typeof AchievementId]
@@ -28,6 +33,11 @@ const DEFAULT_ACHIEVEMENTS: AchievementsState = {
   [AchievementId.Millionaire]: false,
   [AchievementId.Devil]: false,
   [AchievementId.ElonMusk]: false,
+  [AchievementId.NegativeThinking]: false,
+  [AchievementId.Zero]: false,
+  [AchievementId.Fahrenheit451]: false,
+  [AchievementId.ScyllaCharybdis]: false,
+  [AchievementId.AbsoluteZero]: false,
 }
 
 /**

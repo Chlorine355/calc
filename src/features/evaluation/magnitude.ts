@@ -36,9 +36,10 @@ function base(): Est {
   return { huge: false, nan: false, zero: false, neg: false, log10: null, val: null }
 }
 
-function hugeEst(): Est {
+function hugeEst(neg = false): Est {
   const e = base()
   e.huge = true
+  e.neg = neg
   return e
 }
 function nanEst(): Est {
@@ -191,7 +192,7 @@ function estimate(node: MathNode): Est {
 
         if (op === '^' || fn === 'pow') return powEstimate(a, b)
         if (op === '*') {
-          if (operandRisky(a) || operandRisky(b)) return hugeEst()
+          if (operandRisky(a) || operandRisky(b)) return hugeEst(a.neg !== b.neg)
           if (a.nan || b.nan) return nanEst()
           if (a.zero || b.zero) {
             const e = base()
@@ -211,7 +212,7 @@ function estimate(node: MathNode): Est {
           return e
         }
         if (op === '/') {
-          if (operandRisky(a) || operandRisky(b)) return hugeEst()
+          if (operandRisky(a) || operandRisky(b)) return hugeEst(a.neg !== b.neg)
           if (a.nan || b.nan) return nanEst()
           if (b.zero || (b.val != null && b.val === 0)) {
             // деление на ноль — обработает evaluate (ошибка)
@@ -238,7 +239,16 @@ function estimate(node: MathNode): Est {
         }
         if (op === '+' || op === '-') {
           // Ужесточаем: сложение материализует больший операнд целиком.
-          if (operandRisky(a) || operandRisky(b)) return hugeEst()
+          if (operandRisky(a) || operandRisky(b)) {
+            // Знак результата определяет огромный операнд. Для вычитания, когда
+            // огромный операнд — вычитаемое (справа), знак инвертируется.
+            const aRisky = operandRisky(a)
+            const bRisky = operandRisky(b)
+            if (aRisky && !bRisky) return hugeEst(a.neg)
+            if (bRisky && !aRisky) return hugeEst(op === '-' ? !b.neg : b.neg)
+            // Оба огромны — знак неопределён, не считаем отрицательным.
+            return hugeEst(false)
+          }
           if (a.nan || b.nan) return nanEst()
           if (a.zero) {
             const e = { ...b }
@@ -338,4 +348,14 @@ function powEstimate(baseEst: Est, expEst: Est): Est {
  */
 export function isAstronomicallyHuge(node: MathNode): boolean {
   return estimate(node).huge
+}
+
+/**
+ * Знак астрономически огромного результата (true — отрицательный).
+ * Вызывать только когда isAstronomicallyHuge(node) === true.
+ * Функция НИКОГДА не бросает исключений.
+ */
+export function isHugeNegative(node: MathNode): boolean {
+  const est = estimate(node)
+  return est.huge && est.neg;
 }

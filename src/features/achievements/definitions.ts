@@ -49,6 +49,36 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     title: 'Дьявол',
     description: 'Получил ровно 666.',
   },
+  {
+    id: AchievementId.NegativeThinking,
+    icon: '🤔',
+    title: 'Негативное мышление',
+    description: 'Получил отрицательное число.',
+  },
+  {
+    id: AchievementId.Zero,
+    icon: '😐',
+    title: 'Не отлично, не ужасно',
+    description: 'Получил ровно 0.',
+  },
+  {
+    id: AchievementId.Fahrenheit451,
+    icon: '📖',
+    title: 'Рукописи не горят',
+    description: 'Получил ровно 451.',
+  },
+  {
+    id: AchievementId.ScyllaCharybdis,
+    icon: '🌊',
+    title: 'Сцилла и Харибда',
+    description: 'Получил ровно 68.',
+  },
+  {
+    id: AchievementId.AbsoluteZero,
+    icon: '🥶',
+    title: 'Абсолютный ноль',
+    description: 'Получил отрицательное очень большое число.',
+  },
 ]
 
 /** Словарь определений по id для быстрого доступа. */

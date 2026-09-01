@@ -37,6 +37,11 @@ const allFalse: AchievementsState = {
   [AchievementId.Millionaire]: false,
   [AchievementId.Devil]: false,
   [AchievementId.ElonMusk]: false,
+  [AchievementId.NegativeThinking]: false,
+  [AchievementId.Zero]: false,
+  [AchievementId.Fahrenheit451]: false,
+  [AchievementId.ScyllaCharybdis]: false,
+  [AchievementId.AbsoluteZero]: false,
 }
 
 /** Строит полное состояние из частичных правок поверх allFalse. */

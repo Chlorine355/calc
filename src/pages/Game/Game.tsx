@@ -106,7 +106,7 @@ export function Game({ onExit, onLevelComplete }: GameProps) {
       {/* Цель (только у обучающих уровней) */}
       {hasTarget ? (
         <div className={styles.target}>
-          Цель: превзойти <b>{formatLog10Target(targetScore)}</b>
+          Цель: набрать <b>{formatLog10Target(targetScore)}</b>
         </div>
       ) : (
         <div className={styles.target}>
