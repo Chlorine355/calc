@@ -97,7 +97,6 @@ export function Game({ onExit, onLevelComplete }: GameProps) {
         </Button>
         <div className={styles.levelInfo}>
           <span className={styles.level}>Уровень {currentLevel}</span>
-          <span className={styles.score}>Очки: {Math.round(score)}</span>
         </div>
         <Button variant="ghost" size="sm" onClick={handleReset}>
           Сбросить
