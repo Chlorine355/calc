@@ -376,29 +376,31 @@ sample({
   target: $cursorPosition,
 })
 
-// Удаление токена по id (клик по токену). Курсор ставим на место удалённого,
-// чтобы можно было сразу вставить что-то другое.
+// Удаление токена по id (клик по токену). Считаем позицию удалённого ТОЛЬКО
+// из исходного выражения, до мутации, и передаём её вместе с результатом:
+// если читать «$expression» уже после обновления, findIndex вернёт -1 и курсор
+// не сдвинется — игрок потеряет курсор и ввод забагует.
+const tokenRemoved = game.createEvent<{ expression: ExpressionToken[]; index: number }>()
 sample({
   clock: removeToken,
   source: $expression,
   fn: (expression, id) => {
-    const idx = expression.findIndex((t) => t.id === id)
-    if (idx === -1) return expression
+    const index = expression.findIndex((t) => t.id === id)
+    if (index === -1) return { expression, index }
     const next = [...expression]
-    next.splice(idx, 1)
-    return next
+    next.splice(index, 1)
+    return { expression: next, index }
   },
-  target: $expression,
+  target: tokenRemoved,
 })
+sample({ clock: tokenRemoved, fn: (p) => p.expression, target: $expression })
+// Курсор встаёт на место удалённого токена: позиция была валидным «зазором»
+// (там лежал токен), поэтому index всегда в границах 0..length.
+// Вставить что-то другое можно сразу же.
 sample({
-  clock: removeToken,
-  source: { expression: $expression, cursor: $cursorPosition },
-  fn: ({ expression, cursor }, id) => {
-    const idx = expression.findIndex((t) => t.id === id)
-    if (idx === -1) return cursor
-    // Курсор встаёт на место удалённого токена (не дальше конца).
-    return Math.min(idx, expression.length - 1)
-  },
+  clock: tokenRemoved,
+  source: $cursorPosition,
+  fn: (cursor, { expression, index }) => (index === -1 ? cursor : Math.min(index, expression.length)),
   target: $cursorPosition,
 })
 
