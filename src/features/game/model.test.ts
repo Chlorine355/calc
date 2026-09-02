@@ -7,11 +7,19 @@ import {
   removeToken,
   setCursorPosition,
   resetRound,
+  setLevel,
+  setMode,
   $expression,
   $cursorPosition,
+  $currentLevel,
   numberToken,
   operatorToken,
 } from './model'
+import type { Level } from '../../entities/level'
+
+function level(n: number): Level {
+  return { level: n, numbers: [2, 3, 4], operators: ['+', '*'], hasTarget: true, targetScore: 1, example: '' }
+}
 
 function n(value: number) {
   return numberToken(value)
@@ -92,5 +100,37 @@ describe('removeToken (клик по токену)', () => {
     await allSettled(resetRound, { scope })
     expect(scope.getState($cursorPosition)).toBe(0)
     expect(scope.getState($expression)).toHaveLength(0)
+  })
+})
+
+describe('$currentLevel не затирается служебными режимами', () => {
+  it('«Ежедневное испытание» (уровень 0) не сбрасывает точку продолжения', async () => {
+    const scope = fork()
+    // Дошли до 25-го уровня в обычном режиме
+    await allSettled(startGame, { scope, params: 25 })
+    expect(scope.getState($currentLevel)).toBe(25)
+
+    // Вошли в «Ежедневное испытание» — генерирует служебный уровень со level 0
+    await allSettled(setMode, { scope, params: 'daily' })
+    await allSettled(setLevel, { scope, params: level(0) })
+    // Цель и рука загрузились, но точку продолжения затирать нельзя
+    expect(scope.getState($currentLevel)).toBe(25)
+  })
+
+  it('«Часовая бомба» (уровень 1) не затирает точку продолжения', async () => {
+    const scope = fork()
+    await allSettled(startGame, { scope, params: 25 })
+    expect(scope.getState($currentLevel)).toBe(25)
+
+    await allSettled(setMode, { scope, params: 'bomb' })
+    await allSettled(setLevel, { scope, params: level(1) })
+    expect(scope.getState($currentLevel)).toBe(25)
+  })
+
+  it('обычный режим по-прежнему обновляет уровень', async () => {
+    const scope = fork()
+    await allSettled(startGame, { scope, params: 25 })
+    await allSettled(setLevel, { scope, params: level(7) })
+    expect(scope.getState($currentLevel)).toBe(7)
   })
 })

@@ -270,7 +270,17 @@ sample({ clock: startGame, fn: (level) => generateLevel(level), target: setLevel
 // При старте нового уровня сбрасываем состояние раунда
 sample({ clock: startGame, target: resetRound })
 
-sample({ clock: setLevel, fn: (lvl) => lvl.level, target: $currentLevel })
+// $currentLevel — точка продолжения обычного режима. Его обновляет ТОЛЬКО
+// нормальная игра: «Часовая бомба» и «Ежедневное испытание» тоже прогоняют
+// setLevel, но со служебными уровнями (level: 1 и level: 0), и не должны
+// затирать прогресс игрока. Иначе после выхода в меню уровень сбросится.
+sample({
+  clock: setLevel,
+  source: $mode,
+  filter: (mode) => mode === 'normal',
+  fn: (_, lvl) => lvl.level,
+  target: $currentLevel,
+})
 sample({
   clock: setLevel,
   fn: (lvl) => ({ numbers: lvl.numbers, operators: lvl.operators }),

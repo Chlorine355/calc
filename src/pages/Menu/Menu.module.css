@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--menu-gap);
-  min-height: 100vh;
+  min-height: 100svh;
   padding: var(--menu-padding);
 }
 
