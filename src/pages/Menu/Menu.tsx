@@ -41,7 +41,7 @@ export function Menu({ onPlay, onBomb, onDaily, onAchievements }: MenuProps) {
   // «Часовая бомба» открывается после 20-го уровня — сначала нужно пройти обучение.
   const bombLocked = currentLevel < 20
   // «Ежедневное испытание» открывается после 30-го уровня.
-  const dailyLocked = currentLevel < 3
+  const dailyLocked = currentLevel < 30
 
   return (
     <div className={styles.menu}>

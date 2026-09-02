@@ -103,6 +103,24 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     title: 'А большего мне и не надо',
     description: 'Получил ровно 1.',
   },
+  {
+    id: AchievementId.ThousandMinusSeven,
+    icon: '💯',
+    title: '1000-7',
+    description: 'Получил ровно 993.', // 1000 − 7 (отсылка к «Токийскому гъулю»)
+  },
+  {
+    id: AchievementId.ThreeAxes,
+    icon: '🪓',
+    title: 'Три топора',
+    description: 'Получил ровно 777.',
+  },
+  {
+    id: AchievementId.RescueArseniy,
+    icon: '🦺',
+    title: 'Служба спасения, спасите-ка Арсения!',
+    description: 'Получил ровно 112.',
+  },
 ]
 
 /** Словарь определений по id для быстрого доступа. */

@@ -23,6 +23,9 @@ export const AchievementId = {
   GoldenRatio: 'golden-ratio',
   Palindrome: 'palindrome',
   JustOne: 'just-one',
+  ThousandMinusSeven: 'thousand-minus-seven',
+  ThreeAxes: 'three-axes',
+  RescueArseniy: 'rescue-arseniy',
 } as const
 
 export type AchievementId = (typeof AchievementId)[keyof typeof AchievementId]
@@ -46,6 +49,9 @@ const DEFAULT_ACHIEVEMENTS: AchievementsState = {
   [AchievementId.GoldenRatio]: false,
   [AchievementId.Palindrome]: false,
   [AchievementId.JustOne]: false,
+  [AchievementId.ThousandMinusSeven]: false,
+  [AchievementId.ThreeAxes]: false,
+  [AchievementId.RescueArseniy]: false,
 }
 
 /**

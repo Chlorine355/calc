@@ -46,6 +46,9 @@ const allFalse: AchievementsState = {
   [AchievementId.GoldenRatio]: false,
   [AchievementId.Palindrome]: false,
   [AchievementId.JustOne]: false,
+  [AchievementId.ThousandMinusSeven]: false,
+  [AchievementId.ThreeAxes]: false,
+  [AchievementId.RescueArseniy]: false,
 }
 
 /** Строит полное состояние из частичных правок поверх allFalse. */

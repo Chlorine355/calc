@@ -144,6 +144,29 @@ function earnedIds(state: AchievementsState, outcome: EvaluationOutcome): Achiev
     if (!state[AchievementId.JustOne] && exponent === 0 && parseFloat(value) === 1) {
       ids.push(AchievementId.JustOne)
     }
+
+    // 1000-7: ровно 993 (1000 − 7).
+    if (
+      !state[AchievementId.ThousandMinusSeven] &&
+      exponent === 0 &&
+      parseFloat(value) === 993
+    ) {
+      ids.push(AchievementId.ThousandMinusSeven)
+    }
+
+    // Три топора: ровно 777.
+    if (!state[AchievementId.ThreeAxes] && exponent === 0 && parseFloat(value) === 777) {
+      ids.push(AchievementId.ThreeAxes)
+    }
+
+    // Служба спасения: ровно 112.
+    if (
+      !state[AchievementId.RescueArseniy] &&
+      exponent === 0 &&
+      parseFloat(value) === 112
+    ) {
+      ids.push(AchievementId.RescueArseniy)
+    }
   }
 
   return ids
