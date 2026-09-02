@@ -14,14 +14,14 @@ import { serializedLog10 } from '../../shared/lib/formatHugeNumber'
 /**
  * Домен `bomb` — режим «Часовая бомба».
  *
- * За минуту нужно собрать как можно больше выражений, каждое из которых
+ * За две минуты нужно собрать как можно больше выражений, каждое из которых
  * превосходит свою цель. За каждый решённый пример — +1 очко (независимо
  * от величины результата). Рекорд хранится в общем хранилище прогресса.
  */
 const bomb = createDomain('bomb')
 
 /** Длительность раунда, секунд. */
-export const BOMB_DURATION = 60
+export const BOMB_DURATION = 120
 
 // --- Сторы ---
 /** Сколько секунд осталось. */
@@ -112,7 +112,7 @@ sample({
 sample({ clock: bombSolved, target: nextBombLevel })
 
 // Остановка вручную (выход из режима) — сбрасываем флаг и таймер,
-// чтобы при следующем входе раунд начинался с полной минуты.
+// чтобы при следующем входе раунд начинался с полных двух минут.
 sample({ clock: stopBomb, fn: () => false, target: $bombRunning })
 sample({ clock: stopBomb, fn: () => false, target: $bombFinished })
 sample({ clock: stopBomb, fn: () => BOMB_DURATION, target: $bombTimeLeft })

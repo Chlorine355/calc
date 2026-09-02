@@ -39,7 +39,7 @@ interface BombProps {
 }
 
 /**
- * Режим «Часовая бомба»: за минуту собрать как можно больше выражений,
+ * Режим «Часовая бомба»: за две минуты собрать как можно больше выражений,
  * каждое из которых превосходит свою цель. За каждый решённый пример — +1 очко.
  */
 export function Bomb({ onExit }: BombProps) {
@@ -102,7 +102,7 @@ export function Bomb({ onExit }: BombProps) {
             ← Меню
           </Button>
           <div className={styles.stats}>
-            <span className={styles.time}>⏱ 0с</span>
+            <span className={styles.time}>⏱ 0 с</span>
             <span className={styles.score}>Решено: {score}</span>
             <span className={styles.highScore}>Рекорд: {highScore}</span>
           </div>
@@ -138,7 +138,7 @@ export function Bomb({ onExit }: BombProps) {
           ← Меню
         </Button>
         <div className={styles.stats}>
-          <span className={styles.time}>⏱ {timeLeft}с</span>
+          <span className={styles.time}>⏱ {timeLeft} с</span>
           <span className={styles.score}>Решено: {score}</span>
           <span className={styles.highScore}>Рекорд: {highScore}</span>
         </div>
